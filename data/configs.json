@@ -1,16 +1,19 @@
 {
   "updated_at": "2026-10-02T00:00:00Z",
-  "stats": {
-    "total": 0,
-    "alive": 0,
-    "remixed": 0,
-    "avg_ping": 0
-  },
-  "sources": {
-    "total": 0,
-    "active": 0,
-    "dead_removed": 0
-  },
-  "source_list": [],
-  "configs": []
+  "stats": {"total": 4, "alive": 4, "remixed": 0, "avg_ping": 92},
+  "sources": {"total": 6, "active": 6, "dead_removed": 0},
+  "source_items": [
+    {"name": "Source A", "trust_score": 100, "status": "active"},
+    {"name": "Source B", "trust_score": 85, "status": "active"},
+    {"name": "Source C", "trust_score": 85, "status": "active"},
+    {"name": "Source D", "trust_score": 90, "status": "active"},
+    {"name": "Source E", "trust_score": 80, "status": "active"},
+    {"name": "Source F", "trust_score": 75, "status": "active"}
+  ],
+  "configs": [
+    {"protocol":"vless","server":"demo.example.com","port":443,"tcp_ping_ms":65,"http_ping_ms":120,"country":"US","country_flag":"🇺🇸","config":"vless://demo@example.com","is_remixed":false,"source":"local-fixture","trust_score":100},
+    {"protocol":"vmess","server":"node.example.net","port":443,"tcp_ping_ms":91,"http_ping_ms":145,"country":"DE","country_flag":"🇩🇪","config":"vmess://demo","is_remixed":false,"source":"local-fixture","trust_score":85},
+    {"protocol":"trojan","server":"edge.example.org","port":443,"tcp_ping_ms":132,"http_ping_ms":178,"country":"NL","country_flag":"🇳🇱","config":"trojan://demo","is_remixed":false,"source":"local-fixture","trust_score":85},
+    {"protocol":"ss","server":"relay.example.org","port":443,"tcp_ping_ms":177,"http_ping_ms":220,"country":"SG","country_flag":"🇸🇬","config":"ss://demo","is_remixed":false,"source":"local-fixture","trust_score":80}
+  ]
 }

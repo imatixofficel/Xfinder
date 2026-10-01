@@ -1,16 +1,13 @@
-"""اجرای کامل pipeline."""
-from .health_monitor import monitor
-from .finder import collect
-from .validator import validate
-from .remixer import remix
-from .publisher import publish
+"""اجرای pipeline محلی Xfinder."""
+from health_monitor import main as health
+from validator import main as validate
+from publisher import main as publish
 
 def main():
-    monitor()
-    collect()
+    health()
     validate()
-    remix()
-    data=publish()
-    print(data["stats"])
+    publish()
+    print('Xfinder local pipeline completed.')
 
-if __name__=="__main__": main()
+if __name__ == '__main__':
+    main()
