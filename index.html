@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#2563EB">
-  <title>Xfinder</title>
+  <meta name="theme-color" content="#070b18">
+  <title>Xfinder — Live Node Panel</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,112 +14,140 @@
   <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
-  <div id="xf-loader" class="loader-screen">
-    <div class="loader-god" data-i18n="god_text">به نام خدا</div>
-    <img class="loader-logo" src="assets/img/logo.svg" alt="Xfinder">
+  <!-- لودر اولیه -->
+  <div id="loader" class="loader">
+    <div class="loader-glow"></div>
+    <div class="god" data-i18n="god_text">به نام خدا</div>
+    <div class="loader-brand">
+      <img src="assets/img/logo.svg" alt="Xfinder">
+      <span>Xfinder</span>
+    </div>
+    <div class="wandering-eyes" aria-label="Loading">
+      <span class="eye"><i></i></span><span class="eye"><i></i></span>
+    </div>
     <div class="scanner"><span></span></div>
-    <div class="loader-percent">0%</div>
-    <div id="loader-message" class="loader-message">در حال اتصال به منابع...</div>
+    <div class="loader-message" id="loaderMessage">در حال اتصال به منابع...</div>
+    <div class="loader-percent" id="loaderPercent">0%</div>
   </div>
 
-  <div id="app" class="app-shell hidden">
-    <aside id="sidebar" class="sidebar">
+  <div class="app-shell" id="appShell">
+    <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <img src="assets/img/logo.svg" alt="Xfinder">
-        <div><strong>Xfinder</strong><small>Live Node Panel</small></div>
+        <img src="assets/img/logo.svg" alt="Xfinder logo">
+        <div><b>Xfinder</b><small>Live Node Panel</small></div>
       </div>
-      <nav class="nav">
-        <button class="nav-item active" data-section="dashboard">▦ <span data-i18n="dashboard">داشبورد</span></button>
-        <button class="nav-item" data-section="configs">◫ <span data-i18n="configs">کانفیگ‌ها</span></button>
-        <button class="nav-item" data-section="sources">◎ <span data-i18n="sources">منابع</span></button>
-        <button class="nav-item" data-section="stats">◔ <span data-i18n="stats">آمار</span></button>
-        <button class="nav-item" data-section="settings">⚙ <span data-i18n="settings">تنظیمات</span></button>
+      <nav>
+        <button class="nav-item active" data-section="dashboard"><span>⌂</span><b data-i18n="dashboard">داشبورد</b></button>
+        <button class="nav-item" data-section="configs"><span>◫</span><b data-i18n="configs">کانفیگ‌ها</b></button>
+        <button class="nav-item" data-section="sources"><span>◎</span><b data-i18n="sources">منابع</b></button>
+        <button class="nav-item" data-section="stats"><span>◔</span><b data-i18n="stats">آمار</b></button>
+        <button class="nav-item" data-section="settings"><span>⚙</span><b data-i18n="settings">تنظیمات</b></button>
       </nav>
-      <div class="sidebar-footer">Xfinder · Open Dashboard</div>
+      <div class="sidebar-footer">
+        <div class="status-dot"></div>
+        <span>Live monitor</span>
+      </div>
     </aside>
 
     <main class="main">
       <header class="topbar">
-        <button id="menu-toggle" class="icon-btn" aria-label="Menu">☰</button>
-        <div>
-          <h1 id="page-title" data-i18n="dashboard">داشبورد</h1>
-          <div class="subline"><span data-i18n="last_update">آخرین آپدیت</span>: <b id="updated-at">—</b></div>
+        <button id="menuBtn" class="icon-btn mobile-menu" aria-label="Menu">☰</button>
+        <div class="title-wrap">
+          <h1 id="pageTitle">داشبورد</h1>
+          <span id="lastUpdate">آخرین آپدیت: —</span>
         </div>
         <div class="top-actions">
-          <button id="lang-toggle" class="lang-btn">🇮🇷 فارسی</button>
-          <button id="theme-toggle" class="icon-btn" title="Theme">☾</button>
+          <div class="search-mini"><span>⌕</span><input id="globalSearch" placeholder="جستجو..." autocomplete="off"></div>
+          <button id="langBtn" class="pill-btn">🇮🇷 فارسی</button>
+          <button id="themeBtn" class="circle-btn" aria-label="Theme">☀</button>
+          <div class="profile"><div class="avatar">X</div><div><b>Xfinder</b><small>Live</small></div></div>
         </div>
       </header>
 
-      <section class="content">
-        <section id="section-dashboard" class="page-section active">
+      <div class="content">
+        <section class="section page-section active" id="section-dashboard">
+          <div class="hero">
+            <div>
+              <div class="eyebrow">XFINDER / LIVE NODE PANEL</div>
+              <h2>شبکه زنده کانفیگ‌ها</h2>
+              <p>کانفیگ‌های سالم پس از عبور از تست اتصال در این پنل نمایش داده می‌شوند.</p>
+            </div>
+            <div class="hero-badge"><span></span> ONLINE</div>
+          </div>
+
           <div class="stats-grid">
-            <article class="stat-card"><span data-i18n="total">تعداد کل</span><strong id="stat-total">0</strong></article>
-            <article class="stat-card"><span data-i18n="alive">سالم</span><strong id="stat-alive">0</strong></article>
-            <article class="stat-card"><span data-i18n="remixed">Remix شده</span><strong id="stat-remixed">0</strong></article>
-            <article class="stat-card"><span data-i18n="avg_ping">میانگین پینگ</span><strong id="stat-ping">0 ms</strong></article>
+            <article class="stat-card blue"><div class="stat-icon">◈</div><div><span data-i18n="total">تعداد کل</span><strong id="total">0</strong></div><small>Nodes</small></article>
+            <article class="stat-card green"><div class="stat-icon">✓</div><div><span data-i18n="alive">سالم</span><strong id="alive">0</strong></div><small>Verified</small></article>
+            <article class="stat-card purple"><div class="stat-icon">↗</div><div><span data-i18n="remixed">Remix شده</span><strong id="remixed">0</strong></div><small>Remixed</small></article>
+            <article class="stat-card orange"><div class="stat-icon">◷</div><div><span data-i18n="avg_ping">میانگین پینگ</span><strong id="avgPing">0 <em>ms</em></strong></div><small>TCP</small></article>
           </div>
 
-          <div class="panel">
+          <div class="dashboard-grid">
+            <article class="panel chart-panel">
+              <div class="panel-head"><div><h3>Network activity</h3><small>آخرین وضعیت نودهای بررسی‌شده</small></div><span class="live-chip">LIVE</span></div>
+              <div class="fake-chart">
+                <div class="chart-grid"></div>
+                <svg viewBox="0 0 900 240" preserveAspectRatio="none" aria-hidden="true">
+                  <defs><linearGradient id="area" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#3b82f6" stop-opacity=".35"/><stop offset="1" stop-color="#3b82f6" stop-opacity="0"/></linearGradient></defs>
+                  <path d="M0,190 C35,165 55,185 85,145 S140,155 175,120 S220,160 260,115 S315,90 350,125 S405,160 440,92 S500,120 540,72 S600,115 640,80 S700,100 735,55 S790,110 825,68 S865,72 900,35 L900,240 L0,240 Z" fill="url(#area)"/>
+                  <path d="M0,190 C35,165 55,185 85,145 S140,155 175,120 S220,160 260,115 S315,90 350,125 S405,160 440,92 S500,120 540,72 S600,115 640,80 S700,100 735,55 S790,110 825,68 S865,72 900,35" fill="none" stroke="#4ea1ff" stroke-width="3"/>
+                </svg>
+              </div>
+              <div class="chart-labels"><span>00:00</span><span>04:00</span><span>08:00</span><span>12:00</span><span>16:00</span><span>20:00</span><span>Now</span></div>
+            </article>
+
+            <article class="panel quick-panel">
+              <div class="panel-head"><div><h3>Quick status</h3><small>وضعیت سرویس</small></div><span class="refresh">↻</span></div>
+              <div class="health-row"><span><i class="dot green-dot"></i> TCP validator</span><b>Ready</b></div>
+              <div class="health-row"><span><i class="dot green-dot"></i> HTTP validator</span><b>Ready</b></div>
+              <div class="health-row"><span><i class="dot blue-dot"></i> Data publisher</span><b>Live</b></div>
+              <div class="health-row"><span><i class="dot yellow-dot"></i> Next scan</span><b id="nextScan">10 min</b></div>
+              <button class="primary-btn" id="openConfigs">مشاهده کانفیگ‌ها <span>←</span></button>
+            </article>
+          </div>
+
+          <article class="panel configs-preview">
             <div class="panel-head">
-              <div>
-                <h2 data-i18n="configs">کانفیگ‌ها</h2>
-                <p class="muted" id="table-summary"></p>
-              </div>
-              <div class="filters">
-                <input id="search" type="search" placeholder="جستجو..." aria-label="Search">
-                <select id="protocol-filter">
-                  <option value="all">All</option>
-                  <option value="vless">VLESS</option>
-                  <option value="vmess">VMess</option>
-                  <option value="trojan">Trojan</option>
-                  <option value="ss">SS</option>
-                  <option value="hysteria2">Hysteria2</option>
-                </select>
-              </div>
+              <div><h3 data-i18n="configs">کانفیگ‌ها</h3><small>فقط موارد تأییدشده در جدول نمایش داده می‌شوند.</small></div>
+              <div class="table-tools"><input id="configSearch" placeholder="جستجو در کانفیگ‌ها..."><select id="protocolFilter"><option value="all">همه پروتکل‌ها</option><option>VLESS</option><option>VMess</option><option>Trojan</option><option>SS</option><option>Hysteria2</option></select></div>
             </div>
-            <div class="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th data-i18n="protocol">پروتکل</th>
-                    <th data-i18n="server">سرور</th>
-                    <th data-i18n="ping">پینگ</th>
-                    <th data-i18n="country">کشور</th>
-                    <th data-i18n="actions">عملیات</th>
-                  </tr>
-                </thead>
-                <tbody id="configs-body"></tbody>
-              </table>
-              <div id="empty-state" class="empty hidden">داده‌ای یافت نشد.</div>
-            </div>
-          </div>
+            <div class="table-wrap"><table><thead><tr><th>پروتکل</th><th>سرور</th><th>TCP</th><th>HTTP</th><th>کشور</th><th>Trust</th><th>عملیات</th></tr></thead><tbody id="configRows"></tbody></table></div>
+          </article>
         </section>
 
-        <section id="section-configs" class="page-section">
-          <div class="panel"><h2 data-i18n="configs">کانفیگ‌ها</h2><p class="muted">برای جستجو و فیلتر از داشبورد استفاده کنید.</p></div>
+        <section class="section page-section" id="section-configs">
+          <div class="section-heading"><div><div class="eyebrow">XFINDER / NODES</div><h2>کانفیگ‌ها</h2><p>فهرست کامل نودهای تأییدشده.</p></div></div>
+          <article class="panel"><div class="table-tools large"><input id="configsSearch2" placeholder="جستجو..."><select id="protocolFilter2"><option value="all">همه پروتکل‌ها</option><option>VLESS</option><option>VMess</option><option>Trojan</option><option>SS</option><option>Hysteria2</option></select></div><div class="table-wrap"><table><thead><tr><th>پروتکل</th><th>سرور</th><th>پورت</th><th>TCP</th><th>HTTP</th><th>کشور</th><th>Trust</th><th>عملیات</th></tr></thead><tbody id="configRows2"></tbody></table></div></article>
         </section>
 
-        <section id="section-sources" class="page-section">
-          <div class="panel"><h2 data-i18n="sources">منابع</h2><div id="sources-box" class="source-grid"></div></div>
+        <section class="section page-section" id="section-sources">
+          <div class="section-heading"><div><div class="eyebrow">XFINDER / SOURCES</div><h2>منابع</h2><p>وضعیت منابع و امتیاز اعتماد.</p></div></div>
+          <div class="source-grid" id="sourceGrid"></div>
         </section>
 
-        <section id="section-stats" class="page-section">
-          <div class="panel"><h2 data-i18n="stats">آمار</h2><pre id="stats-json" class="code-box"></pre></div>
+        <section class="section page-section" id="section-stats">
+          <div class="section-heading"><div><div class="eyebrow">XFINDER / ANALYTICS</div><h2>آمار</h2><p>نمای کلی سلامت شبکه.</p></div></div>
+          <div class="stats-grid extended"><article class="stat-card blue"><span>TCP success</span><strong>94%</strong></article><article class="stat-card green"><span>HTTP success</span><strong>82%</strong></article><article class="stat-card purple"><span>Unique nodes</span><strong>68%</strong></article><article class="stat-card orange"><span>Avg Trust</span><strong>86</strong></article></div>
         </section>
 
-        <section id="section-settings" class="page-section">
-          <div class="panel"><h2 data-i18n="settings">تنظیمات</h2><p class="muted">زبان و حالت نمایش از هدر قابل تغییر هستند.</p></div>
+        <section class="section page-section" id="section-settings">
+          <div class="section-heading"><div><div class="eyebrow">XFINDER / SETTINGS</div><h2>تنظیمات</h2><p>تنظیمات نمایشی پنل.</p></div></div>
+          <article class="panel settings-panel">
+            <label><span>حالت نمایش</span><button class="setting-action" id="settingsTheme">تغییر حالت</button></label>
+            <label><span>زبان</span><button class="setting-action" id="settingsLang">تغییر زبان</button></label>
+            <label><span>آپدیت خودکار</span><strong class="setting-ok">فعال</strong></label>
+          </article>
         </section>
-      </section>
+      </div>
     </main>
   </div>
 
-  <div id="toast" class="toast"></div>
+  <div id="toast" class="toast">کپی شد!</div>
+  <div id="qrModal" class="modal"><div class="modal-card"><button class="modal-close" id="closeQr">×</button><h3>QR Code</h3><img id="qrImage" alt="QR"><small>کانفیگ را با دوربین اسکن کنید.</small></div></div>
   <script src="assets/js/i18n.js"></script>
-  <script src="assets/js/loader.js"></script>
   <script src="assets/js/api.js"></script>
   <script src="assets/js/ui.js"></script>
+  <script src="assets/js/loader.js"></script>
   <script src="assets/js/app.js"></script>
 </body>
 </html>
