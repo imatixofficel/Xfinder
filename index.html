@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#2563EB">
+  <title>Xfinder</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <link rel="stylesheet" href="assets/css/sidebar.css">
+  <link rel="stylesheet" href="assets/css/loader.css">
+  <link rel="stylesheet" href="assets/css/responsive.css">
+</head>
+<body>
+  <div id="xf-loader" class="loader-screen">
+    <div class="loader-god" data-i18n="god_text">به نام خدا</div>
+    <img class="loader-logo" src="assets/img/logo.svg" alt="Xfinder">
+    <div class="scanner"><span></span></div>
+    <div class="loader-percent">0%</div>
+    <div id="loader-message" class="loader-message">در حال اتصال به منابع...</div>
+  </div>
+
+  <div id="app" class="app-shell hidden">
+    <aside id="sidebar" class="sidebar">
+      <div class="brand">
+        <img src="assets/img/logo.svg" alt="Xfinder">
+        <div><strong>Xfinder</strong><small>Live Node Panel</small></div>
+      </div>
+      <nav class="nav">
+        <button class="nav-item active" data-section="dashboard">▦ <span data-i18n="dashboard">داشبورد</span></button>
+        <button class="nav-item" data-section="configs">◫ <span data-i18n="configs">کانفیگ‌ها</span></button>
+        <button class="nav-item" data-section="sources">◎ <span data-i18n="sources">منابع</span></button>
+        <button class="nav-item" data-section="stats">◔ <span data-i18n="stats">آمار</span></button>
+        <button class="nav-item" data-section="settings">⚙ <span data-i18n="settings">تنظیمات</span></button>
+      </nav>
+      <div class="sidebar-footer">Xfinder · Open Dashboard</div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button id="menu-toggle" class="icon-btn" aria-label="Menu">☰</button>
+        <div>
+          <h1 id="page-title" data-i18n="dashboard">داشبورد</h1>
+          <div class="subline"><span data-i18n="last_update">آخرین آپدیت</span>: <b id="updated-at">—</b></div>
+        </div>
+        <div class="top-actions">
+          <button id="lang-toggle" class="lang-btn">🇮🇷 فارسی</button>
+          <button id="theme-toggle" class="icon-btn" title="Theme">☾</button>
+        </div>
+      </header>
+
+      <section class="content">
+        <section id="section-dashboard" class="page-section active">
+          <div class="stats-grid">
+            <article class="stat-card"><span data-i18n="total">تعداد کل</span><strong id="stat-total">0</strong></article>
+            <article class="stat-card"><span data-i18n="alive">سالم</span><strong id="stat-alive">0</strong></article>
+            <article class="stat-card"><span data-i18n="remixed">Remix شده</span><strong id="stat-remixed">0</strong></article>
+            <article class="stat-card"><span data-i18n="avg_ping">میانگین پینگ</span><strong id="stat-ping">0 ms</strong></article>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h2 data-i18n="configs">کانفیگ‌ها</h2>
+                <p class="muted" id="table-summary"></p>
+              </div>
+              <div class="filters">
+                <input id="search" type="search" placeholder="جستجو..." aria-label="Search">
+                <select id="protocol-filter">
+                  <option value="all">All</option>
+                  <option value="vless">VLESS</option>
+                  <option value="vmess">VMess</option>
+                  <option value="trojan">Trojan</option>
+                  <option value="ss">SS</option>
+                  <option value="hysteria2">Hysteria2</option>
+                </select>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th data-i18n="protocol">پروتکل</th>
+                    <th data-i18n="server">سرور</th>
+                    <th data-i18n="ping">پینگ</th>
+                    <th data-i18n="country">کشور</th>
+                    <th data-i18n="actions">عملیات</th>
+                  </tr>
+                </thead>
+                <tbody id="configs-body"></tbody>
+              </table>
+              <div id="empty-state" class="empty hidden">داده‌ای یافت نشد.</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="section-configs" class="page-section">
+          <div class="panel"><h2 data-i18n="configs">کانفیگ‌ها</h2><p class="muted">برای جستجو و فیلتر از داشبورد استفاده کنید.</p></div>
+        </section>
+
+        <section id="section-sources" class="page-section">
+          <div class="panel"><h2 data-i18n="sources">منابع</h2><div id="sources-box" class="source-grid"></div></div>
+        </section>
+
+        <section id="section-stats" class="page-section">
+          <div class="panel"><h2 data-i18n="stats">آمار</h2><pre id="stats-json" class="code-box"></pre></div>
+        </section>
+
+        <section id="section-settings" class="page-section">
+          <div class="panel"><h2 data-i18n="settings">تنظیمات</h2><p class="muted">زبان و حالت نمایش از هدر قابل تغییر هستند.</p></div>
+        </section>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+  <script src="assets/js/i18n.js"></script>
+  <script src="assets/js/loader.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/ui.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>

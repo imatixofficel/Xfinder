@@ -1,85 +1,49 @@
-"""اعتبارسنجی اولیه URI و تست TCP محدود."""
-import asyncio
-import socket
-import time
-from urllib.parse import urlsplit, unquote
-from .settings import TCP_CONCURRENCY, TCP_CONCURRENCY_MAX, TCP_TIMEOUT_SECONDS, MAX_CONFIGS_TO_TEST
+"""تست TCP همزمان؛ این تست صرفاً دسترسی TCP را اندازه می‌گیرد."""
+import asyncio, json, socket, time, urllib.parse
+from .config import DATA_DIR, CONCURRENCY, TIMEOUT
 
-SUPPORTED = ("vless://", "vmess://", "trojan://", "ss://", "hysteria2://", "hy2://", "tuic://", "wireguard://")
-
-def protocol_of(config):
-    return config.split("://", 1)[0].lower() if "://" in config else "unknown"
-
-def endpoint_of(config):
-    """استخراج میزبان/پورت از URIهایی که ساختار userinfo@host:port دارند."""
-    proto = protocol_of(config)
-    if proto == "vmess":
-        return None
+def parse_endpoint(uri):
     try:
-        parsed = urlsplit(config)
-        host = parsed.hostname
-        port = parsed.port
-        if not host or not port:
-            return None
-        return host, port
-    except (ValueError, TypeError):
-        return None
+        scheme=uri.split("://",1)[0].lower()
+        if scheme=="vmess":
+            import base64
+            raw=uri[8:]; raw += "="*((4-len(raw)%4)%4)
+            obj=json.loads(base64.urlsafe_b64decode(raw).decode())
+            return scheme,obj.get("add"),int(obj.get("port") or 0)
+        u=urllib.parse.urlsplit(uri)
+        host=u.hostname
+        port=u.port
+        return scheme,host,port
+    except Exception:
+        return "",None,None
 
-def basic_validate(config):
-    if not config.startswith(SUPPORTED):
-        return False
-    if len(config) > 20_000:
-        return False
-    if protocol_of(config) == "vmess":
-        # ساختار VMess معمولاً Base64 است؛ فقط وجود payload بررسی می‌شود.
-        return len(config) > len("vmess://")
-    return endpoint_of(config) is not None
-
-async def tcp_test(config, semaphore):
-    endpoint = endpoint_of(config)
-    if endpoint is None:
-        return {"latency_ms": None, "tcp_alive": None}
-    host, port = endpoint
-    async with semaphore:
-        started = time.perf_counter()
+async def probe(item, sem):
+    scheme,host,port=parse_endpoint(item["config"])
+    if not host or not port:return None
+    async with sem:
+        start=time.perf_counter()
         try:
-            loop = asyncio.get_running_loop()
-            await asyncio.wait_for(
-                loop.getaddrinfo(host, port, type=socket.SOCK_STREAM),
-                timeout=TCP_TIMEOUT_SECONDS
-            )
-            reader, writer = await asyncio.wait_for(
-                asyncio.open_connection(host, port),
-                timeout=TCP_TIMEOUT_SECONDS
-            )
-            latency = round((time.perf_counter() - started) * 1000, 1)
+            fut=asyncio.open_connection(host,port)
+            reader,writer=await asyncio.wait_for(fut,timeout=TIMEOUT)
+            ms=round((time.perf_counter()-start)*1000)
             writer.close()
-            try:
-                await writer.wait_closed()
-            except Exception:
-                pass
-            return {"latency_ms": latency, "tcp_alive": True}
-        except Exception:
-            return {"latency_ms": None, "tcp_alive": False}
+            try: await writer.wait_closed()
+            except Exception: pass
+            item.update({"protocol":scheme,"server":host,"port":port,"ping_ms":ms})
+            return item
+        except Exception:return None
 
-async def validate(configs):
-    concurrency = max(1, min(int(TCP_CONCURRENCY), TCP_CONCURRENCY_MAX))
-    semaphore = asyncio.Semaphore(concurrency)
-    unique = list(dict.fromkeys(configs))
-    output = []
-    # سقف تعداد تست برای جلوگیری از ایجاد بار زیاد روی شبکه
-    for config in unique[:MAX_CONFIGS_TO_TEST]:
-        valid = basic_validate(config)
-        row = {
-            "config": config,
-            "protocol": protocol_of(config),
-            "host": (endpoint_of(config) or (None, None))[0],
-            "port": (endpoint_of(config) or (None, None))[1],
-            "valid": valid,
-            "latency_ms": None,
-            "tcp_alive": None,
-        }
-        if valid:
-            row.update(await tcp_test(config, semaphore))
-        output.append(row)
-    return output
+async def run(items):
+    sem=asyncio.Semaphore(CONCURRENCY)
+    results=await asyncio.gather(*(probe(x,sem) for x in items))
+    return [x for x in results if x]
+
+def validate():
+    p=DATA_DIR/"collected.json"
+    items=json.loads(p.read_text(encoding="utf-8")) if p.exists() else []
+    alive=asyncio.run(run(items))
+    (DATA_DIR/"validated.json").write_text(json.dumps(alive,ensure_ascii=False,indent=2),encoding="utf-8")
+    print(f"Alive TCP endpoints: {len(alive)}")
+    return alive
+
+if __name__=="__main__": validate()

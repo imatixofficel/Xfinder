@@ -1,0 +1,16 @@
+{
+  "updated_at": "2026-10-02T00:00:00Z",
+  "stats": {
+    "total": 0,
+    "alive": 0,
+    "remixed": 0,
+    "avg_ping": 0
+  },
+  "sources": {
+    "total": 0,
+    "active": 0,
+    "dead_removed": 0
+  },
+  "source_list": [],
+  "configs": []
+}

@@ -1,0 +1,4 @@
+.sidebar{width:250px;flex:0 0 250px;background:var(--sidebar);border-inline-end:1px solid var(--border);padding:22px 14px;display:flex;flex-direction:column;min-height:100vh}
+.brand{display:flex;align-items:center;gap:10px;padding:5px 9px 25px}.brand img{width:42px;height:42px}.brand strong{display:block;font-size:18px}.brand small{display:block;color:var(--muted);font-size:10px;margin-top:2px}
+.nav{display:grid;gap:5px}.nav-item{border:0;background:transparent;color:var(--muted);padding:12px 13px;border-radius:9px;text-align:start;display:flex;align-items:center;gap:10px}.nav-item:hover,.nav-item.active{background:var(--card);color:var(--accent);box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.sidebar-footer{margin-top:auto;color:var(--muted);font-size:10px;padding:10px}
