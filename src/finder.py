@@ -3,8 +3,9 @@ import asyncio, base64, json, random, re
 from urllib.request import Request, urlopen
 from .config import SOURCES, BLACKLIST, MAX_PER_SOURCE
 from .discover import discover
+from .wg_sources import confs_to_uris
 
-URI_PATTERN = re.compile(r"(?i)(?:vless|vmess|trojan|ss|hysteria2)://[^\s\"'<>\\]+")
+URI_PATTERN = re.compile(r"(?i)(?:vless|vmess|trojan|ss|hysteria2|wireguard)://[^\s\"'<>\\]+")
 MAX_BYTES = 40_000_000
 
 
@@ -53,6 +54,8 @@ def extract(text):
     found = []
     for body in bodies:
         found.extend(URI_PATTERN.findall(body))
+        if "[Interface]" in body:
+            found.extend(confs_to_uris(body))
         if body.lstrip()[:1] in "[{":
             try:
                 parsed = json.loads(body)

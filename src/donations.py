@@ -103,6 +103,24 @@ def ingest(body, issue_no, user):
     return True, f"اهدا ثبت شد و تا {DONATION_TTL_HOURS} ساعت بعد از تست موفق نمایش داده می‌شود. سپاس!"
 
 
+def ingest_json(payload_json, run_id):
+    """اهدای مستقیم از سایت (Cloudflare Worker -> repository_dispatch). ورودی دوباره اعتبارسنجی می‌شود."""
+    try:
+        p = json.loads(payload_json or "{}")
+    except Exception:
+        return False, "ورودی نامعتبر است."
+    cfgs = p.get("configs") if isinstance(p, dict) else None
+    text = "\n".join(str(c) for c in cfgs[:MAX_DONATION_CONFIGS * 2]) if isinstance(cfgs, list) else ""
+    found = []
+    for u in URI.findall(text):
+        u = u.rstrip(".,;)]}")
+        if u not in found:
+            found.append(u)
+    user = re.sub(r"[^A-Za-z0-9_-]", "", str(p.get("user", "web")))[:40] or "web"
+    return ingest("### Configs\n" + "\n".join(found[:MAX_DONATION_CONFIGS]) + "\n\n### Ad\n" + clean_ad(p.get("ad", "")),
+                  int(run_id or 0), "web-" + user)
+
+
 def _gh_out(**kv):
     path = os.getenv("GITHUB_OUTPUT")
     if path:
@@ -115,6 +133,10 @@ if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else ""
     if cmd == "ingest":
         ok, msg = ingest(os.getenv("ISSUE_BODY", ""), os.getenv("ISSUE_NUMBER", "0") or 0, os.getenv("ISSUE_USER", "anon"))
+        print(ok, msg)
+        _gh_out(ok=str(ok).lower(), message=msg)
+    elif cmd == "ingest-json":
+        ok, msg = ingest_json(os.getenv("DONATION_JSON", ""), os.getenv("RUN_ID", "0") or 0)
         print(ok, msg)
         _gh_out(ok=str(ok).lower(), message=msg)
     elif cmd == "cleanup":

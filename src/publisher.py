@@ -16,7 +16,7 @@ def publish(items, remixed, wireguard=(), source_stats=(), raw_total=0, donation
         x["protocol"] = x.get("protocol") or x["config"].split("://", 1)[0].lower()
         x.setdefault("http_ping_ms", None); x.setdefault("is_remixed", False)
         x.setdefault("country", "UN"); x.setdefault("country_flag", "🌐")
-        if x["protocol"] != "wireguard":   # WireGuard یک فایل .conf است، نه URI
+        if x["protocol"] != "wireguard" or x["config"].lower().startswith("wireguard://"):   # URI قابل نام‌گذاری
             x["orig_name"] = original_name(x["config"])[:60]
             x["name"] = make_label(x["protocol"], _ping(x) if _ping(x) != 9999 else None, i, x["is_remixed"], BRAND)
             x["config"] = rename(x["config"], x["name"])
@@ -27,7 +27,8 @@ def publish(items, remixed, wireguard=(), source_stats=(), raw_total=0, donation
     for x in all_items: groups.setdefault(x["protocol"], []).append(x["config"])
     for p, lines in groups.items():
         (OUTPUT_DIR / f"{p}.txt").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    (OUTPUT_DIR / "all.txt").write_text("\n".join(x["config"] for x in all_items) + "\n", encoding="utf-8")
+    # all.txt بدون WireGuard: همه‌ی برنامه‌ها wireguard:// را در اشتراک نمی‌فهمند (فایل جدا: wireguard.txt)
+    (OUTPUT_DIR / "all.txt").write_text("\n".join(x["config"] for x in all_items if x["protocol"] != "wireguard") + "\n", encoding="utf-8")
 
     # ۲۰ کانفیگ برتر: همه‌ی کاندیدها قبلاً با Xray + HTTPS واقعی تست شده‌اند؛ کمترین پینگ واقعی اول.
     top, seen = [], set()

@@ -179,6 +179,9 @@ def outbound_from_uri(uri):
         host, port = _split_host_port(hp)
         return {"protocol": "shadowsocks", "settings": {"servers": [
             {"address": host, "port": port, "method": method, "password": unquote(password)}]}}
+    if proto == "wireguard":
+        from .wg_sources import outbound_from_uri as _wg_outbound
+        return _wg_outbound(uri)
     raise ValueError(f"unsupported protocol: {proto}")
 
 

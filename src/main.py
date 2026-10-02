@@ -1,6 +1,6 @@
 import asyncio, os, sys, time
 from collections import Counter
-from .config import (DATA_DIR, PIPELINE_BUDGET, MAX_TCP_CANDIDATES, MAX_XRAY_CANDIDATES, MAX_PER_ENDPOINT)
+from .config import (MAX_WG_CANDIDATES, DATA_DIR, PIPELINE_BUDGET, MAX_TCP_CANDIDATES, MAX_XRAY_CANDIDATES, MAX_PER_ENDPOINT)
 from .health_monitor import init_db
 from .finder import collect, SOURCE_STATS
 from .validator import validate
@@ -9,6 +9,8 @@ from .remixer import fetch_clean_async, build_with
 from .publisher import publish
 from .donations import load_active, cleanup
 from .naming import original_name, rename
+from . import wg_sources
+import random
 
 
 def log(*a):
@@ -49,6 +51,32 @@ async def _real_validate(items, label, tcp_deadline, xray_deadline):
     return good
 
 
+async def _validate_wg(items, deadline):
+    """WireGuard (UDP): بدون تست TCP؛ مستقیم Xray + HTTPS واقعی."""
+    cands = []
+    for x in items:
+        try:
+            d = wg_sources.parse_uri(x["config"])
+        except Exception:
+            continue
+        x.update({"server": d["host"], "port": d["port"], "tcp_ping_ms": None})
+        cands.append(x)
+    random.shuffle(cands)
+    cands = limit_per_endpoint(cands)[:MAX_WG_CANDIDATES]
+    if not cands:
+        log("wireguard: 0 usable candidates in sources")
+        return []
+    tested = await validate_xray(cands, xray_binary(), deadline=deadline)
+    good = [x for x in tested if x.get("xray_alive")]
+    for x in good:
+        x["alive"] = True
+        x["protocol"] = "wireguard"
+        x["conf"] = wg_sources.conf_from_uri(x["config"])
+    good.sort(key=lambda x: x.get("http_ping_ms") or 9999)
+    log(f"wireguard: {len(cands)} candidates -> {len(good)} passed real Xray probe")
+    return good
+
+
 async def run():
     t0 = time.monotonic()
     b = PIPELINE_BUDGET
@@ -64,8 +92,18 @@ async def run():
 
     # 1) Collect -> TCP pre-filter -> real Xray/HTTPS probe.
     raw = await collect()
-    log(f"collected {len(raw)} unique configs in {time.monotonic() - t0:.0f}s")
+    wg_raw = [x for x in raw if x["config"].lower().startswith("wireguard://")]
+    raw = [x for x in raw if not x["config"].lower().startswith("wireguard://")]
+    log(f"collected {len(raw)} unique configs (+{len(wg_raw)} wireguard) in {time.monotonic() - t0:.0f}s")
     validated = await _real_validate(raw, "base", t0 + 0.25 * b, t0 + 0.70 * b)
+
+    # 1b) WireGuard منابع (UDP) — جدا از بقیه، با بودجه‌ی زمانی کوچک.
+    wg_good = []
+    try:
+        if wg_raw and validated:
+            wg_good = await _validate_wg(wg_raw, t0 + 0.78 * b)
+    except Exception as e:
+        log("wireguard stage skipped:", e)
 
     # 2) Clean-IP scanner results -> remix -> real Xray probe again.
     remixed, clean = [], []
@@ -108,7 +146,7 @@ async def run():
     except Exception as e:
         log("donations skipped:", e)
 
-    publish(validated, remixed, [], list(SOURCE_STATS), len(raw), donations, len(clean))
+    publish(validated, remixed, wg_good, list(SOURCE_STATS), len(raw), donations, len(clean))
     log(f"Xfinder complete in {time.monotonic() - t0:.0f}s: {len(validated)} real-tested, "
         f"{len(remixed)} real-tested remix")
 

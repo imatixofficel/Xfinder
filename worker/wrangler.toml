@@ -1,0 +1,12 @@
+name = "xfinder-donate"
+main = "donate-worker.js"
+compatibility_date = "2024-11-01"
+
+[vars]
+GH_REPO = "imatixofficel/Xfinder"
+ALLOWED_ORIGIN = "https://imatixofficel.github.io"
+
+# اختیاری (محدودیت تعداد اهدا): یک KV بساز و uncomment کن
+# [[kv_namespaces]]
+# binding = "RL"
+# id = "<KV_ID>"

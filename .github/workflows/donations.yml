@@ -3,6 +3,8 @@ name: Xfinder Donations
 on:
   issues:
     types: [opened]
+  repository_dispatch:
+    types: [donation]          # اهدای مستقیم از سایت (از طریق Cloudflare Worker)
   schedule:
     - cron: "17 * * * *"     # پاکسازی ساعتی اهدای‌های منقضی (بیش از ۲۴ ساعت)
   workflow_dispatch:
@@ -50,8 +52,33 @@ jobs:
           gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "$MSG"
           gh issue close ${{ github.event.issue.number }} --repo ${{ github.repository }}
 
+  ingest_api:
+    if: github.event_name == 'repository_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Save donation
+        id: don
+        env:
+          DONATION_JSON: ${{ toJSON(github.event.client_payload) }}
+          RUN_ID: ${{ github.run_id }}
+        run: python -m src.donations ingest-json
+      - name: Commit donation
+        if: steps.don.outputs.ok == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add donations
+          git commit -m "donation: web ${{ github.run_id }}" || exit 0
+          git pull --rebase --autostash origin ${{ github.event.repository.default_branch }}
+          git push
+
   cleanup:
-    if: github.event_name != 'issues'
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

@@ -79,3 +79,30 @@ TOP_N = 20
 DISCOVER_SOURCES = os.getenv("DISCOVER_SOURCES", "1") != "0"
 DISCOVER_MAX_REPOS = _env_int("DISCOVER_MAX_REPOS", 8)
 BRAND = "Xfinder"
+
+# --- WireGuard از منابع (تست واقعی با Xray) ---
+MAX_WG_CANDIDATES = _env_int("MAX_WG_CANDIDATES", 96)
+EXTRA_SOURCES_FILE = ROOT / "sources_extra.txt"   # هر خط: URL  یا  name|URL  (برای افزودن منبع دلخواه)
+
+
+def _load_extra_sources():
+    out = []
+    try:
+        for ln in EXTRA_SOURCES_FILE.read_text(encoding="utf-8").splitlines():
+            ln = ln.strip()
+            if not ln or ln.startswith("#"):
+                continue
+            name, url = (ln.split("|", 1) + [""])[:2] if "|" in ln else ("", ln)
+            if "|" in ln:
+                name, url = ln.split("|", 1)
+            url = url.strip()
+            if url.startswith("https://"):
+                parts = url.split("/")
+                out.append({"name": name.strip() or (parts[3] + "/" + parts[4] if len(parts) > 4 else url),
+                            "url": url, "trust": 65, "has_http_test": False})
+    except OSError:
+        pass
+    return out
+
+
+SOURCES += _load_extra_sources()

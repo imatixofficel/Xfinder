@@ -22,6 +22,9 @@ class Naming(unittest.TestCase):
 
 
 class Donations(unittest.TestCase):
+    def setUp(self):
+        for f in DONATIONS_DIR.glob("*.json"): f.unlink()
+
     def test_parse_expire_cleanup(self):
         body = "### Configs\n\nvless://a@1.1.1.1:443#x\ntrojan://b@2.2.2.2:443\n\n### Ad\n\n<b>سلام</b> کانال من"
         cfgs, ad = donations.parse_issue(body)
@@ -51,3 +54,45 @@ class Top20(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class WireGuard(unittest.TestCase):
+    PRIV = "yAnz5TF+lXXJte14tji3zlMNq+hd2rYUIgJBgB3fBmk="
+    PUB = "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo="
+
+    def test_roundtrip_and_outbound(self):
+        from src import wg_sources as w
+        d = {"private_key": self.PRIV, "public_key": self.PUB, "psk": "", "host": "162.159.192.1", "port": 2408,
+             "address": ["172.16.0.2", "fd01::2"], "mtu": 1280, "reserved": [1, 2, 3]}
+        uri = w.to_uri(d, "n")
+        p = w.parse_uri(uri)
+        self.assertEqual((p["private_key"], p["public_key"], p["host"], p["port"], p["reserved"]), (self.PRIV, self.PUB, "162.159.192.1", 2408, [1, 2, 3]))
+        o = w.outbound_from_uri(uri)["settings"]
+        self.assertEqual(o["address"], ["172.16.0.2", "fd01::2"]); self.assertEqual(o["peers"][0]["endpoint"], "162.159.192.1:2408")
+        self.assertIn("PrivateKey = " + self.PRIV, w.conf_from_uri(uri))
+
+    def test_raw_unencoded_keys_and_conf_extract(self):
+        from src import wg_sources as w
+        from src.finder import extract
+        raw = f"wireguard://{self.PRIV}@1.2.3.4:2408?address=172.16.0.2/32&publickey={self.PUB}&mtu=1280#x"
+        self.assertEqual(w.parse_uri(raw)["public_key"], self.PUB)
+        conf = f"[Interface]\nPrivateKey = {self.PRIV}\nAddress = 172.16.0.2/32\n\n[Peer]\nPublicKey = {self.PUB}\nEndpoint = 5.6.7.8:2408\n"
+        got = extract(conf)
+        self.assertEqual(len(got), 1); self.assertEqual(w.parse_uri(got[0])["host"], "5.6.7.8")
+        self.assertEqual(len(extract(raw)), 1)
+
+    def test_bad_keys_rejected(self):
+        from src import wg_sources as w
+        with self.assertRaises(ValueError):
+            w.parse_uri("wireguard://abc@1.2.3.4:2408?address=1.1.1.1&publickey=zzz")
+
+
+class DirectDonation(unittest.TestCase):
+    def test_ingest_json(self):
+        for f in DONATIONS_DIR.glob("*.json"): f.unlink()
+        payload = json.dumps({"configs": ["vless://a@1.1.1.1:443#x", "javascript:alert(1)", "trojan://b@2.2.2.2:443"], "ad": "<b>hi</b>", "user": "ab12/../x"})
+        ok, _ = donations.ingest_json(payload, 99)
+        self.assertTrue(ok)
+        d = donations.load_active()[0]
+        self.assertEqual(len(d["configs"]), 2); self.assertNotIn("<", d["ad"]); self.assertEqual(d["user"], "web-ab12x")
+        self.assertFalse(donations.ingest_json("not json", 1)[0])

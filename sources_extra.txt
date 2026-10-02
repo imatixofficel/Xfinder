@@ -1,0 +1,4 @@
+# منبع دلخواه اضافه کن (هر خط: URL  یا  name|URL) — فقط https.
+# هر فایلی که wireguard://‎، فایل .conf، یا vless/vmess/trojan/ss/hysteria2 داشته باشد پشتیبانی می‌شود.
+# مثال:
+# my-wg|https://raw.githubusercontent.com/USER/REPO/main/wireguard.txt

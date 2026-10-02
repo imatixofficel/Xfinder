@@ -36,7 +36,7 @@ def rename(cfg, label):
 
 
 def make_label(proto, ping, index, remixed=False, brand="Xfinder"):
-    p = {"ss": "SS", "hysteria2": "HY2"}.get(proto, (proto or "").upper())
+    p = {"ss": "SS", "hysteria2": "HY2", "wireguard": "WG"}.get(proto, (proto or "").upper())
     tag = f"{brand} ✦ {p}" if remixed else f"{brand} • {p}"
     ms = f" • {int(round(ping))}ms" if ping else ""
     return f"{tag}{ms} • {index:03d}"
