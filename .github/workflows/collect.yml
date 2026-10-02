@@ -2,7 +2,7 @@ name: Xfinder Auto Update
 
 on:
   schedule:
-    - cron: "*/10 * * * *"
+    - cron: "7,37 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -17,7 +17,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -49,12 +49,18 @@ jobs:
       - name: Install Python requirements
         run: pip install -r requirements.txt
 
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+
       - name: Run collector, scanner, remix and real Xray validation
+        timeout-minutes: 20
         env:
+          PYTHONUNBUFFERED: "1"
           XRAY_BIN: ${{ runner.temp }}/xray
-          XRAY_CONCURRENCY: "32"
+          XRAY_PARALLEL: "4"
           XRAY_BATCH_SIZE: "32"
           XRAY_PROBE_TIMEOUT: "5"
+          PIPELINE_BUDGET: "840"
         run: python -m src.main
 
       - name: Build clean Pages artifact

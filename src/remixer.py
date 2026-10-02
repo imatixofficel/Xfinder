@@ -117,7 +117,7 @@ def remix_config(cfg, new_ip, new_port=None):
     old = m.group(1).strip("[]")
     port = str(new_port or (m.group(2) or ""))
     replacement = new_ip + ((":" + port) if port else "")
-    out = cfg[:m.start(1)] + replacement + cfg[m.end(1):]
+    out = cfg[:m.start(1)] + replacement + cfg[m.end():]  # m.end(): also drop the OLD port
     head, _, tag = out.partition("#")
     if "?" in head:
         if "sni=" not in head and "security=none" not in head: head += "&sni=" + old

@@ -1,12 +1,35 @@
+import os
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(os.getenv("XFINDER_ROOT") or Path(__file__).resolve().parents[1])
 DATA_DIR = ROOT / "data"
 OUTPUT_DIR = ROOT / "output"
 DB_PATH = ROOT / "sources.db"
 
-CONCURRENCY = 400
-TCP_TIMEOUT = 5.0
+
+def _env_float(name, default):
+    try:
+        return float(os.getenv(name, default))
+    except ValueError:
+        return float(default)
+
+
+def _env_int(name, default):
+    try:
+        return int(os.getenv(name, default))
+    except ValueError:
+        return int(default)
+
+
+# --- Time / size budgets (the pipeline must ALWAYS finish and publish) ---
+PIPELINE_BUDGET = _env_float("PIPELINE_BUDGET", 840)   # seconds for the whole run
+MAX_PER_SOURCE = _env_int("MAX_PER_SOURCE", 3000)      # random sample per source
+MAX_TCP_CANDIDATES = _env_int("MAX_TCP_CANDIDATES", 20000)
+MAX_XRAY_CANDIDATES = _env_int("MAX_XRAY_CANDIDATES", 1600)
+MAX_PER_ENDPOINT = 3                                   # same host:port variants
+
+CONCURRENCY = 800
+TCP_TIMEOUT = 3.0
 HTTP_TIMEOUT = 8.0
 MIN_TRUST = 60
 MAX_REMIX_PING = 70

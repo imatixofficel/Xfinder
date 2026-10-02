@@ -1,6 +1,6 @@
 import json
 from datetime import datetime, timezone
-from .config import ROOT, OUTPUT_DIR, MAX_PUBLISH_BASE
+from .config import DATA_DIR, OUTPUT_DIR, MAX_PUBLISH_BASE
 
 def publish(items, remixed, wireguard=(), source_stats=(), raw_total=0):
     """ترتیب نمایش: اول کانفیگ‌های ترکیب‌شده با IP تمیز، بعد WireGuard، بعد بقیه."""
@@ -10,7 +10,7 @@ def publish(items, remixed, wireguard=(), source_stats=(), raw_total=0):
         x["protocol"] = x.get("protocol") or x["config"].split("://", 1)[0].lower()
         x.setdefault("http_ping_ms", None); x.setdefault("is_remixed", False)
         x.setdefault("country", "UN"); x.setdefault("country_flag", "🌐")
-    OUTPUT_DIR.mkdir(exist_ok=True)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True); DATA_DIR.mkdir(parents=True, exist_ok=True)
     groups = {p: [] for p in ["vless", "vmess", "trojan", "ss", "hysteria2", "wireguard"]}
     for x in all_items: groups.setdefault(x["protocol"], []).append(x["config"])
     for p, lines in groups.items():
@@ -23,5 +23,5 @@ def publish(items, remixed, wireguard=(), source_stats=(), raw_total=0):
             "stats": {"total": len(all_items), "alive": len(items), "remixed": len(remixed), "wireguard": len(wireguard), "avg_ping": avg},
             "sources": {"total": len(source_stats), "active": len(ok), "dead_removed": len(source_stats) - len(ok)},
             "source_list": list(source_stats), "configs": all_items}
-    (ROOT / "data/configs.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
+    (DATA_DIR / "configs.json").write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     return data
