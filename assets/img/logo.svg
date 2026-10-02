@@ -1,20 +1,6 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Xfinder logo">
-  <defs>
-    <linearGradient id="xg" x1="12" y1="10" x2="116" y2="118" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#7DB4FF"/>
-      <stop offset=".48" stop-color="#3B82F6"/>
-      <stop offset="1" stop-color="#1554C0"/>
-    </linearGradient>
-    <linearGradient id="shine" x1="28" y1="18" x2="92" y2="105" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#FFFFFF" stop-opacity=".62"/>
-      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
-    </linearGradient>
-    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
-      <feDropShadow dx="0" dy="7" stdDeviation="7" flood-color="#0B5DE7" flood-opacity=".22"/>
-    </filter>
-  </defs>
-  <rect x="7" y="7" width="114" height="114" rx="30" fill="#0A1427" stroke="#22385E" stroke-width="2"/>
-  <path filter="url(#shadow)" fill="url(#xg)" d="M25 24h25l14 25 14-25h25L78 64l25 40H78L64 79l-14 25H25l25-40z"/>
-  <path fill="url(#shine)" d="M28 27h19l17 29 7-11-11-18h13L64 55z" opacity=".55"/>
-  <circle cx="100" cy="28" r="5" fill="#63A4FF"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<defs><linearGradient id="b" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#19d9ff"/><stop offset=".55" stop-color="#1477ff"/><stop offset="1" stop-color="#174bdc"/></linearGradient></defs>
+<circle cx="50" cy="50" r="48" fill="#07152e" stroke="url(#b)" stroke-width="4"/>
+<path d="M27 24h17l9 20 10-20h19L57 77H39z" fill="url(#b)"/>
+<path d="M24 60c14-20 40-30 54-18 8 7 8 17-2 27-8 8-18 10-28 5 9 0 17-4 22-10 6-8 4-13-4-16-12-4-29 6-42 17z" fill="#6ce9ff"/>
 </svg>

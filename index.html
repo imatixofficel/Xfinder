@@ -3,28 +3,31 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <meta name="theme-color" content="#070b16">
+  <meta name="theme-color" content="#070b14">
   <title>Xfinder — Live Node Panel</title>
-  <meta name="description" content="Xfinder live configuration dashboard">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <script>try{if(localStorage.getItem("xfinder_theme")==="light")document.documentElement.classList.add("prelight")}catch(e){}</script>
+  <meta name="description" content="Xfinder live proxy configuration dashboard">
+  <script>
+    try {
+      if (localStorage.getItem("xfinder_theme") === "light")
+        document.documentElement.classList.add("prelight");
+    } catch(e) {}
+  </script>
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="stylesheet" href="assets/css/sidebar.css">
   <link rel="stylesheet" href="assets/css/loader.css">
   <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
+  <!-- لودر Spokes؛ نسخه HTML/CSS معادل ظاهر @loading-ui/spokes و بدون وابستگی React -->
   <div id="loader" class="loader-screen" aria-live="polite">
-    <div class="loader-brand-wrap">
-      <img class="loader-logo" src="assets/img/logo.svg" alt="Xfinder">
+    <div class="loader-orbit">
+      <div class="spokes" aria-hidden="true">
+        <i></i><i></i><i></i><i></i><i></i><i></i>
+        <i></i><i></i><i></i><i></i><i></i><i></i>
+      </div>
+      <img src="assets/img/logo.png" class="loader-logo" alt="Xfinder">
     </div>
     <div class="god-text" data-i18n="god_text">به نام خدا</div>
-    <div class="wandering-eyes" aria-hidden="true">
-      <span class="eye"><i></i></span><span class="eye"><i></i></span>
-    </div>
-    <div class="scan-line"></div>
     <div class="load-message" id="loadMessage">در حال اتصال به منابع...</div>
     <div class="load-percent" id="loadPercent">0%</div>
     <div class="load-track"><i id="loadBar"></i></div>
@@ -33,72 +36,107 @@
   <div class="app-shell">
     <aside class="sidebar" id="sidebar">
       <div class="brand">
-        <img src="assets/img/logo.svg" alt="Xfinder">
-        <div><strong>Xfinder</strong><small>Live Node Panel</small></div>
+        <div class="brand-logo"><img src="assets/img/logo.png" alt="Xfinder"></div>
+        <div class="brand-copy"><strong>Xfinder</strong><small>LIVE NODE PANEL</small></div>
       </div>
+
+      <div class="side-label">MENU</div>
       <nav>
-        <button class="nav-item active" data-section="dashboard"><span>▦</span><b data-i18n="dashboard">داشبورد</b></button>
-        <button class="nav-item" data-section="configs"><span>◫</span><b data-i18n="configs">کانفیگ‌ها</b></button>
-        <button class="nav-item" data-section="sources"><span>◎</span><b data-i18n="sources">منابع</b></button>
-        <button class="nav-item" data-section="stats"><span>◔</span><b data-i18n="stats">آمار</b></button>
-        <button class="nav-item" data-section="settings"><span>⚙</span><b data-i18n="settings">تنظیمات</b></button>
+        <button class="nav-item active" data-section="dashboard">
+          <span class="nav-icon">⌂</span><b data-i18n="dashboard">داشبورد</b>
+        </button>
+        <button class="nav-item" data-section="configs">
+          <span class="nav-icon">◈</span><b data-i18n="configs">کانفیگ‌ها</b>
+          <em id="navConfigCount">0</em>
+        </button>
+        <button class="nav-item" data-section="sources">
+          <span class="nav-icon">◎</span><b data-i18n="sources">منابع</b>
+        </button>
+        <button class="nav-item" data-section="stats">
+          <span class="nav-icon">◒</span><b data-i18n="stats">آمار</b>
+        </button>
       </nav>
+
+      <div class="side-label side-label-bottom">SYSTEM</div>
+      <nav>
+        <button class="nav-item" data-section="settings">
+          <span class="nav-icon">⚙</span><b data-i18n="settings">تنظیمات</b>
+        </button>
+      </nav>
+
+      <div class="sidebar-status">
+        <span class="status-pulse"></span>
+        <div><strong>Collector Online</strong><small>Auto update · 10 min</small></div>
+      </div>
       <div class="sidebar-footer">Xfinder · Open Dashboard</div>
     </aside>
 
     <main class="main">
       <header class="topbar">
         <button class="hamburger" id="hamburger" aria-label="menu">☰</button>
-        <div class="top-brand-mini"><span class="mini-x">X</span><span>Xfinder</span></div>
-        <div class="top-search"><span>⌕</span><input id="globalSearch" placeholder="جستجو در Xfinder..." aria-label="جستجو"></div>
-        <div class="quick-links"><span class="quick-active">⌂ داشبورد</span><span>Nodes</span><span>Monitor</span><span>Community</span></div>
+        <div class="mobile-brand"><img src="assets/img/logo.png" alt=""> <b>Xfinder</b></div>
+
+        <div class="top-search">
+          <span>⌕</span><input id="globalSearch" placeholder="جستجو در Xfinder..." aria-label="جستجو">
+          <kbd>⌘ K</kbd>
+        </div>
+
+        <div class="top-links">
+          <span class="top-link active">Overview</span>
+          <span class="top-link">Nodes</span>
+          <span class="top-link">Monitor</span>
+        </div>
+
         <div class="top-actions">
-          <button class="icon-btn" id="themeToggle" title="Dark/Light">◐</button>
+          <button class="circle-btn" id="themeToggle" title="تغییر تم">◐</button>
           <button class="lang-btn" id="langToggle">🇮🇷 فارسی</button>
-          <span class="online-user">● LIVE</span>
+          <span class="live-badge"><i></i> LIVE</span>
         </div>
       </header>
 
       <section id="dashboard" class="section active">
         <div class="hero-row">
           <div>
-            <span class="eyebrow">XFINDER LIVE</span>
-            <h2>پنل زنده کانفیگ‌ها</h2>
-            <p>کانفیگ‌ها پس از دریافت و اعتبارسنجی وارد فهرست می‌شوند.</p>
+            <div class="eyebrow">XFINDER / LIVE NETWORK</div>
+            <h1>پنل زنده کانفیگ‌ها</h1>
+            <p>کانفیگ‌ها پس از دریافت، تست TCP/HTTP و اعتبارسنجی نمایش داده می‌شوند.</p>
           </div>
-          <div class="status-pill"><i></i><span id="liveStatus">Online</span></div>
+          <div class="last-update-box"><span>آخرین بروزرسانی</span><strong id="updatedAt">—</strong></div>
         </div>
 
         <div class="stats-grid">
-          <article class="stat-card"><span>◉</span><small data-i18n="total">تعداد کل</small><strong id="statTotal">0</strong><em>Nodes</em></article>
-          <article class="stat-card"><span>✓</span><small data-i18n="alive">سالم</small><strong id="statAlive">0</strong><em>TCP + HTTP</em></article>
-          <article class="stat-card"><span>↗</span><small data-i18n="remixed">Remix شده</small><strong id="statRemixed">0</strong><em>Clean IP</em></article>
-          <article class="stat-card"><span>◌</span><small data-i18n="avg_ping">میانگین پینگ</small><strong id="statPing">0</strong><em>ms</em></article>
+          <article class="stat-card"><div class="stat-icon blue">◈</div><small data-i18n="total">تعداد کل</small><strong id="statTotal">0</strong><em>Nodes</em></article>
+          <article class="stat-card"><div class="stat-icon green">✓</div><small data-i18n="alive">سالم</small><strong id="statAlive">0</strong><em>TCP + HTTP</em></article>
+          <article class="stat-card"><div class="stat-icon purple">↗</div><small data-i18n="remixed">Remix شده</small><strong id="statRemixed">0</strong><em>Clean IP</em></article>
+          <article class="stat-card"><div class="stat-icon orange">◌</div><small data-i18n="avg_ping">میانگین پینگ</small><strong id="statPing">0</strong><em>milliseconds</em></article>
         </div>
 
         <div class="dashboard-grid">
           <article class="panel chart-panel">
-            <div class="panel-head"><div><h3>Node Performance</h3><p>TCP / HTTP latency</p></div><span class="live-dot">LIVE</span></div>
+            <div class="panel-head"><div><h3>Node Performance</h3><p>TCP / HTTP latency</p></div><span class="live-chip"><i></i> LIVE</span></div>
             <div class="chart" id="chart"></div>
           </article>
-          <article class="panel mini-panel">
+          <article class="panel protocol-panel">
             <div class="panel-head"><div><h3>Protocols</h3><p>Live distribution</p></div></div>
             <div id="protocolBars"></div>
           </article>
+        </div>
+
+        <div class="quick-row">
+          <button class="quick-card" data-jump="configs"><span>◈</span><div><b>همه کانفیگ‌ها</b><small>مشاهده و جستجو</small></div><strong>→</strong></button>
+          <button class="quick-card" data-jump="sources"><span>◎</span><div><b>منابع فعال</b><small>Trust Score</small></div><strong>→</strong></button>
+          <button class="quick-card" data-jump="stats"><span>◒</span><div><b>گزارش سیستم</b><small>آمار آخرین اجرا</small></div><strong>→</strong></button>
         </div>
       </section>
 
       <section id="configs" class="section">
         <div class="section-head">
-          <div><h2 data-i18n="configs">کانفیگ‌ها</h2><p>فقط کانفیگ‌هایی که Backend تأیید کرده در این جدول قرار می‌گیرند.</p></div>
+          <div><div class="eyebrow">NETWORK / CONFIGS</div><h2 data-i18n="configs">کانفیگ‌ها</h2><p>تمام کانفیگ‌های تأییدشده اینجا نمایش داده می‌شوند.</p></div>
           <div class="data-badge" id="dataStatus">در انتظار داده</div>
         </div>
         <div class="toolbar">
-          <input id="searchInput" type="search" placeholder="جستجو در سرور، کشور یا کانفیگ...">
-          <select id="protocolFilter">
-            <option value="all">همه پروتکل‌ها</option><option value="vless">VLESS</option><option value="vmess">VMess</option>
-            <option value="trojan">Trojan</option><option value="ss">SS</option><option value="hysteria2">Hysteria2</option>
-          </select>
+          <div class="toolbar-search">⌕<input id="searchInput" type="search" placeholder="سرور، کشور یا کانفیگ را جستجو کنید..."></div>
+          <select id="protocolFilter"><option value="all">همه پروتکل‌ها</option><option value="vless">VLESS</option><option value="vmess">VMess</option><option value="trojan">Trojan</option><option value="ss">SS</option><option value="hysteria2">Hysteria2</option></select>
           <button class="refresh-btn" id="refreshBtn">↻ بروزرسانی</button>
         </div>
         <div class="table-wrap">
@@ -110,19 +148,19 @@
       </section>
 
       <section id="sources" class="section">
-        <div class="section-head"><div><h2>منابع</h2><p>Trust Score و وضعیت آخرین اجرای جمع‌آوری.</p></div></div>
+        <div class="section-head"><div><div class="eyebrow">NETWORK / SOURCES</div><h2>منابع</h2><p>وضعیت و Trust Score منابع فعال.</p></div></div>
         <div class="source-grid" id="sourceGrid"></div>
       </section>
 
       <section id="stats" class="section">
-        <div class="section-head"><div><h2>آمار</h2><p>نمای کلی از نتایج آخرین اجرا.</p></div></div>
+        <div class="section-head"><div><div class="eyebrow">SYSTEM / STATS</div><h2>آمار</h2><p>نمای کلی از آخرین اجرای Collector.</p></div></div>
         <div class="stats-large" id="statsLarge"></div>
       </section>
 
       <section id="settings" class="section">
-        <div class="section-head"><div><h2>تنظیمات</h2><p>تنظیمات محلی رابط کاربری.</p></div></div>
+        <div class="section-head"><div><div class="eyebrow">SYSTEM / SETTINGS</div><h2>تنظیمات</h2><p>تنظیمات محلی رابط کاربری.</p></div></div>
         <div class="settings-card">
-          <label><span>تم</span><button class="toggle" id="themeToggle2">تغییر حالت</button></label>
+          <label><span>تم پنل</span><button class="toggle" id="themeToggle2">تغییر حالت</button></label>
           <label><span>زبان</span><button class="toggle" id="langToggle2">فارسی / English</button></label>
         </div>
       </section>
@@ -130,7 +168,17 @@
   </div>
 
   <div class="toast" id="toast"></div>
-  <div class="modal" id="qrModal"><div class="modal-box"><button id="closeModal">×</button><h3>QR Code</h3><canvas id="qrCanvas" width="260" height="260"></canvas></div></div>
+
+  <!-- QR در همان صفحه و داخل همین پنل باز می‌شود -->
+  <div class="modal" id="qrModal">
+    <div class="modal-box">
+      <button id="closeModal" class="modal-close">×</button>
+      <div class="qr-title"><span class="qr-mark">QR</span><div><h3>QR Code</h3><p id="qrServer">—</p></div></div>
+      <div class="qr-frame"><img id="qrImage" alt="QR Code"></div>
+      <div class="qr-config" id="qrConfig"></div>
+      <button id="copyQrConfig" class="qr-copy">کپی کانفیگ</button>
+    </div>
+  </div>
 
   <script src="assets/js/i18n.js"></script>
   <script src="assets/js/loader.js"></script>
