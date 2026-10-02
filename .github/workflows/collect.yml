@@ -1,31 +1,38 @@
 name: Xfinder Auto Update
+
 on:
-  workflow_dispatch:
   schedule:
-    - cron: '*/10 * * * *'
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
 permissions:
   contents: write
+
 concurrency:
   group: xfinder-update
   cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-      - run: python src/main.py
-      - name: Commit generated data
+          python-version: "3.11"
+          cache: "pip"
+      - run: pip install -r requirements.txt
+      - name: Collect, validate and publish
+        run: python -m src.main
+      - name: Commit data
         run: |
-          git config user.name 'Xfinder Bot'
-          git config user.email 'bot@xfinder.dev'
-          git add data/ output/
+          git config user.name "Xfinder Bot"
+          git config user.email "bot@xfinder.dev"
+          git add data/ output/ sources.db
           if git diff --staged --quiet; then
-            echo 'No changes'
+            echo "No changes"
           else
-            git commit -m "chore: update generated data"
+            git commit -m "Xfinder: update $(date -u +%FT%TZ)"
             git push
           fi

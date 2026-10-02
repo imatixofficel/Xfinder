@@ -1,1 +1,14 @@
-function loader(done){let p=0,msg=['در حال اتصال به منابع...','جمع‌آوری کانفیگ‌ها...','تست دسترسی شبکه...','ترکیب با IPهای تمیز...','آماده‌سازی پنل...'],i=0,t=setInterval(()=>{p=Math.min(100,p+Math.ceil(Math.random()*8));document.getElementById('pct').textContent=p;document.getElementById('loadmsg').textContent=msg[i++%msg.length];if(p>=100){clearInterval(t);setTimeout(()=>{loaderDone();done()},300)}},120)}function loaderDone(){document.getElementById('loader').classList.add('out');document.getElementById('app').classList.remove('hidden')}
+const loadMessages=["در حال اتصال به منابع...","جمع‌آوری کانفیگ‌ها...","تست پینگ ۴۰۰ همزمانی...","ترکیب با IPهای تمیز...","آماده‌سازی پنل..."];
+let loaderDone=false;
+function finishLoader(){
+  if(loaderDone)return; loaderDone=true;
+  const l=document.getElementById("loader"); if(l)l.classList.add("hide");
+}
+async function startLoader(){
+  const pct=document.getElementById("loadPercent"), msg=document.getElementById("loadMessage");
+  let n=0, i=0;
+  const timer=setInterval(()=>{n=Math.min(100,n+4);pct.textContent=n+"%";msg.textContent=loadMessages[i%loadMessages.length];i++;if(n>=100){clearInterval(timer);setTimeout(finishLoader,250)}},55);
+  setTimeout(finishLoader,5200);
+}
+window.addEventListener("error",()=>setTimeout(finishLoader,100));
+startLoader();

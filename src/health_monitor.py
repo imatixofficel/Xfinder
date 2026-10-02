@@ -1,13 +1,23 @@
-"""مانیتور متادیتای منابع محلی."""
-import json
-from config import DATA, TRUST_THRESHOLD
+import sqlite3
+from datetime import datetime, timezone
+from .config import DB_PATH, SOURCES, BLACKLIST
 
-def main():
-    path = DATA / 'configs.json'
-    data = json.loads(path.read_text(encoding='utf-8'))
-    for item in data.get('source_items', []):
-        item['eligible'] = item.get('trust_score', 0) >= TRUST_THRESHOLD
-    path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
+def init_db():
+    con=sqlite3.connect(DB_PATH)
+    con.execute("""CREATE TABLE IF NOT EXISTS sources(
+      name TEXT PRIMARY KEY,url TEXT,trust REAL DEFAULT 0,last_ok TEXT,
+      consecutive_failures INTEGER DEFAULT 0,config_count INTEGER DEFAULT 0,
+      success_rate REAL DEFAULT 0,avg_ping REAL DEFAULT 0,disabled INTEGER DEFAULT 0)""")
+    for s in SOURCES:
+        if s["name"] not in BLACKLIST:
+            con.execute("INSERT OR IGNORE INTO sources(name,url) VALUES(?,?)",(s["name"],s["url"]))
+    con.commit();con.close()
 
-if __name__ == '__main__':
-    main()
+def active_sources():
+    init_db()
+    con=sqlite3.connect(DB_PATH); rows=con.execute("SELECT name,url,trust,disabled FROM sources WHERE disabled=0").fetchall();con.close()
+    return [{"name":r[0],"url":r[1],"trust":r[2],"disabled":r[3]} for r in rows]
+
+if __name__=="__main__":
+    init_db()
+    print("health database ready")

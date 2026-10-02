@@ -1,37 +1,67 @@
 # Xfinder
 
-پنل استاتیک Xfinder با ظاهر داشبورد مدرن، فونت Vazirmatn، RTL/LTR، لودر «به نام خدا»، جستجو، فیلتر، حالت تاریک، Trust Score و نمایش داده از `data/configs.json`.
-
-## نکته مهم
-
-این بسته یک **نسخه امن و قابل انتشار** است: جمع‌آوری خودکار endpointهای پروکسی عمومی، تست عملیاتی آن‌ها و Remix با IPهای شخص ثالث در کد اجرایی فعال نشده‌اند. فایل‌های `finder.py`، `validator.py` و `remixer.py` به‌صورت scaffold محلی هستند و از fixtureهای داخل پروژه استفاده می‌کنند.
+پنل زنده Xfinder برای نمایش کانفیگ‌های معتبر در GitHub Pages.
 
 ## اجرا
 
 ```bash
+git clone https://github.com/USERNAME/xfinder.git
+cd xfinder
 python -m src.main
-python -m http.server 8000 --directory .
+python -m http.server 8000
 ```
 
-سپس `http://localhost:8000` را باز کنید.
+سپس:
+`http://localhost:8000`
 
 ## GitHub Pages
 
-`Settings → Pages → Deploy from branch → main → / (root)`
+در Repository به مسیر Settings → Pages بروید و Branch اصلی و پوشه `/root` را انتخاب کنید.
 
-## زمان‌بندی
+## بروزرسانی خودکار
 
-Workflow با `*/10 * * * *` اجرا می‌شود. GitHub Actions ممکن است اجرای cron را چند دقیقه جابه‌جا کند.
+Workflow موجود در:
 
-## امکانات رابط
+```text
+.github/workflows/collect.yml
+```
 
-- طراحی داشبورد تیره/روشن با کارت و سایدبار
-- فونت Vazirmatn
-- RTL/LTR
-- تشخیص زبان از localStorage، مرورگر و در مرحله سوم IP
-- لودر «به نام خدا» و Wandering Eyes با CSS خالص
-- فیلتر VLESS / VMess / Trojan / SS / Hysteria2
-- جستجوی زنده
-- Copy و QR placeholder
-- Trust Score و منابع
-- واکنش‌گرا و منوی موبایل
+هر ۱۰ دقیقه اجرا می‌شود. توجه کنید GitHub Actions زمان‌بندی cron را ممکن است با تأخیر اجرا کند.
+
+## معماری
+
+- `finder.py`: دریافت منابع و استخراج URLهای VLESS/VMess/Trojan/SS/Hysteria2
+- `validator.py`: تست TCP همزمان با Semaphore
+- `remixer.py`: خواندن IPهای تمیز و ساخت نسخه‌های remix
+- `publisher.py`: ساخت `data/configs.json` و خروجی‌های پروتکل
+- `trust_scorer.py`: محاسبه Trust Score
+- `health_monitor.py`: پایگاه داده SQLite برای وضعیت منابع
+- `main.py`: اجرای کل pipeline
+
+## نکته مهم درباره تست HTTP
+
+تست TCP نشان می‌دهد endpoint از نظر اتصال TCP پاسخ می‌دهد؛ این به‌تنهایی به معنی سالم بودن کامل پروکسی نیست.
+
+برای تست واقعی HTTP از داخل تونل، باید یک core مانند sing-box/Xray نصب و پیکربندی شود و ترافیک آزمایشی از همان تونل عبور کند. این نسخه هسته پروکسی را خودکار دانلود و اجرا نمی‌کند تا اجرای ناخواسته یک binary شبکه‌ای روی GitHub Actions رخ ندهد.
+
+## Remix
+
+جایگزینی IP به‌تنهایی تضمین‌کننده اتصال نیست. SNI، Host، TLS و سایر پارامترهای transport باید با مقصد سازگار باشند.
+
+## منابع
+
+منابع در `src/config.py` محدود به ۶ URL تعریف‌شده هستند. بلک‌لیست نیز همان‌جا اعمال می‌شود.
+
+## فونت
+
+رابط از Vazirmatn استفاده می‌کند. در محیط بدون اینترنت می‌توانید نسخه مجاز WOFF2 فونت را در:
+
+```text
+assets/fonts/
+```
+
+قرار دهید و در CSS به آن ارجاع دهید.
+
+## مجوز و استفاده
+
+این پروژه برای مانیتورینگ و نمایش داده‌های عمومی طراحی شده است. قبل از استفاده از منابع یا سرویس‌های اشخاص ثالث، شرایط استفاده و قوانین مربوط به آن‌ها را بررسی کنید.
