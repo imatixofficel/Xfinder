@@ -25,6 +25,17 @@ window.showQR=i=>{
  $("#qrImage").src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&margin=10&data="+encodeURIComponent(activeQRConfig);
  $("#qrModal").classList.add("show");
 };
-function renderSources(){const sources=[["Au1rxx/free-vpn-subscriptions","HTTP test priority",100],["Epodonios/v2ray-configs","5 minute source",85],["MatinGhanbari/v2ray-configs","15 minute source",85],["Delta-Kronecker/V2ray-Config","Xray-oriented source",90],["R3ZARAHIMI/tg-v2ray-configs-every2h","Country separated",80],["FreeList-V2ray-Configs","No-CF source",75]];$("#sourceGrid").innerHTML=sources.map(s=>`<article class="source-card"><div><h4>${esc(s[0])}</h4><p>${esc(s[1])}</p></div><div class="trust">${s[2]}</div></article>`).join("")}
+function renderSources(){
+ const list=API.data?.source_list||[
+  ["Au1rxx/free-vpn-subscriptions","HTTP test priority",100],
+  ["Epodonios/v2ray-configs","5 minute source",85],
+  ["MatinGhanbari/v2ray-configs","15 minute source",85],
+  ["Delta-Kronecker/V2ray-Config","Xray-oriented source",90],
+  ["R3ZARAHIMI/tg-v2ray-configs-every2h","Country separated",80],
+  ["FreeList-V2ray-Configs","No-CF source",75]
+ ];
+ const rows=list.map(s=>Array.isArray(s)?s:[s.name,s.url,s.trust]);
+ $("#sourceGrid").innerHTML=rows.map(s=>`<article class="source-card"><div><h4>${esc(s[0])}</h4><p>${esc(s[1])}</p></div><div class="trust">${esc(s[2])}</div></article>`).join("");
+}
 function renderLargeStats(d){$("#statsLarge").innerHTML=[["Total",d.stats?.total??0],["Alive",d.stats?.alive??0],["Remixed",d.stats?.remixed??0],["Average TCP/HTTP",(d.stats?.avg_ping??0)+" ms"],["Active Sources",d.sources?.active??0],["Removed Sources",d.sources?.dead_removed??0]].map(x=>`<div><span>${x[0]}</span><strong>${esc(x[1])}</strong></div>`).join("")}
 function renderAll(){const d=API.data||{stats:{},sources:{},configs:[]};renderStats(d);renderChart(d);renderProtocols(d);renderTable();renderSources();renderLargeStats(d)}

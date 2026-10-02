@@ -13,8 +13,8 @@ async function init(){
  $("#searchInput").oninput=renderTable;$("#protocolFilter").onchange=renderTable;
  $("#refreshBtn").onclick=async()=>{await loadData();renderAll();toast(currentLang==="fa"?"داده‌ها بروزرسانی شد":"Data refreshed")};
 
- const setTheme=()=>{document.body.classList.toggle("light");document.documentElement.classList.toggle("prelight",document.body.classList.contains("light"));localStorage.setItem("xfinder_theme",document.body.classList.contains("light")?"light":"dark")};
- if(localStorage.getItem("xfinder_theme")==="light"){document.body.classList.add("light");document.documentElement.classList.add("prelight")}
+ const setTheme=()=>{const next=document.documentElement.dataset.theme==="light"?"dark":"light";document.documentElement.dataset.theme=next;localStorage.setItem("xfinder_theme",next)};
+ document.documentElement.dataset.theme=localStorage.getItem("xfinder_theme")||"dark";
  $("#themeToggle").onclick=setTheme;$("#themeToggle2").onclick=setTheme;
 
  const toggleLang=()=>applyLang(currentLang==="fa"?"en":"fa");$("#langToggle").onclick=toggleLang;$("#langToggle2").onclick=toggleLang;
