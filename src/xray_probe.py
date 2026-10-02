@@ -1,11 +1,11 @@
-"""Real Xray connectivity probe for public proxy URIs.
+"""Real Xray connectivity validation.
 
-The probe builds a temporary Xray config, starts a local SOCKS5 listener and
-uses curl through that listener to perform a real HTTPS request. Nothing is
-written to the repository except the final generated data when requested by
-the caller.
+Runs Xray in small batches instead of starting a new Xray process for every
+configuration. Each candidate gets its own local SOCKS5 inbound and outbound;
+HTTPS is then fetched through that exact outbound. This keeps validation real
+while preventing large public lists from timing out the GitHub runner.
 """
-import asyncio, base64, json, os, re, tempfile, time
+import asyncio, base64, json, os, socket, tempfile, time
 from pathlib import Path
 from urllib.parse import urlparse, parse_qs, unquote
 
@@ -13,8 +13,9 @@ PROBE_URLS = [
     "https://www.cloudflare.com/cdn-cgi/trace",
     "https://www.gstatic.com/generate_204",
 ]
-DEFAULT_TIMEOUT = float(os.getenv("XRAY_PROBE_TIMEOUT", "8"))
-CONCURRENCY = int(os.getenv("XRAY_CONCURRENCY", "16"))
+DEFAULT_TIMEOUT = float(os.getenv("XRAY_PROBE_TIMEOUT", "5"))
+CONCURRENCY = max(1, int(os.getenv("XRAY_CONCURRENCY", "32")))
+BATCH_SIZE = max(1, int(os.getenv("XRAY_BATCH_SIZE", "32")))
 
 
 def _b64decode(s):
@@ -36,8 +37,10 @@ def _split_host_port(hostport, default=443):
         return hostport, default
     if ":" in hostport:
         h, p = hostport.rsplit(":", 1)
-        try: return h, int(p)
-        except ValueError: return h, default
+        try:
+            return h, int(p)
+        except ValueError:
+            return h, default
     return hostport, default
 
 
@@ -45,21 +48,22 @@ def _tls(q, fallback_host=""):
     sec = q.get("security", [""])[0].lower()
     if sec not in {"tls", "reality"}:
         return None
-    d = {"serverName": q.get("sni", [""])[0] or q.get("host", [""])[0] or fallback_host,
+    server_name = q.get("sni", [""])[0] or q.get("host", [""])[0] or fallback_host
+    d = {"serverName": server_name,
          "allowInsecure": _bool(q.get("allowInsecure", [q.get("allow_insecure", ["0"])[0]])[0])}
     fp = q.get("fp", [""])[0]
-    if fp: d["fingerprint"] = fp
+    if fp:
+        d["fingerprint"] = fp
     alpn = q.get("alpn", [""])[0]
-    if alpn: d["alpn"] = [x for x in alpn.split(",") if x]
+    if alpn:
+        d["alpn"] = [x for x in alpn.split(",") if x]
     if sec == "reality":
         pk = q.get("pbk", [""])[0] or q.get("publicKey", [""])[0]
         sid = q.get("sid", [""])[0] or q.get("shortId", [""])[0]
-        if not pk: raise ValueError("reality public key missing")
-        d["realitySettings"] = {"show": False, "publicKey": pk, "shortId": sid}
-        d.pop("serverName", None)
-    return {"security": "reality" if sec == "reality" else "tls",
-            "tlsSettings": d if sec == "tls" else None,
-            "realitySettings": d.get("realitySettings") if sec == "reality" else None}
+        if not pk:
+            raise ValueError("reality public key missing")
+        return {"security": "reality", "realitySettings": {"show": False, "fingerprint": fp or "chrome", "serverName": server_name, "publicKey": pk, "shortId": sid}}
+    return {"security": "tls", "tlsSettings": d}
 
 
 def _stream_from_query(q, host):
@@ -68,7 +72,8 @@ def _stream_from_query(q, host):
     if net == "ws":
         w = {"path": unquote(q.get("path", ["/"])[0] or "/")}
         h = q.get("host", [""])[0]
-        if h: w["headers"] = {"Host": h}
+        if h:
+            w["headers"] = {"Host": h}
         s["wsSettings"] = w
     elif net in {"grpc", "gun"}:
         s["network"] = "grpc"
@@ -78,7 +83,8 @@ def _stream_from_query(q, host):
         s["network"] = "http"
         h = q.get("host", [""])[0]
         s["httpSettings"] = {"path": unquote(q.get("path", ["/"])[0] or "/")}
-        if h: s["httpSettings"]["host"] = [h]
+        if h:
+            s["httpSettings"]["host"] = [h]
     else:
         typ = q.get("headerType", q.get("type", ["none"]))[0]
         if typ == "http":
@@ -86,8 +92,10 @@ def _stream_from_query(q, host):
     tls = _tls(q, host)
     if tls:
         s["security"] = tls["security"]
-        if tls["security"] == "tls": s["tlsSettings"] = tls["tlsSettings"]
-        else: s["realitySettings"] = tls["realitySettings"]
+        if tls["security"] == "tls":
+            s["tlsSettings"] = tls["tlsSettings"]
+        else:
+            s["realitySettings"] = tls["realitySettings"]
     return s
 
 
@@ -97,123 +105,179 @@ def outbound_from_uri(uri):
         body = uri.split("://", 1)[1].split("#", 1)[0]
         o = json.loads(_b64decode(body).decode("utf-8", "replace"))
         host, port = str(o.get("add", "")), int(o.get("port", 443))
-        if not host: raise ValueError("vmess address missing")
-        v = {"vnext": [{"address": host, "port": port, "users": [{"id": o.get("id", ""), "alterId": int(o.get("aid", 0) or 0), "security": o.get("scy", "auto") or "auto"}]}]}
-        q = {"type": [o.get("net", "tcp")], "security": [o.get("tls", "")], "sni": [o.get("sni", "")], "host": [o.get("host", "")], "path": [o.get("path", "/")], "fp": [o.get("fp", "")], "alpn": [o.get("alpn", "")]}
+        if not host:
+            raise ValueError("vmess address missing")
+        user = {"id": o.get("id", ""), "alterId": int(o.get("aid", 0) or 0), "security": o.get("scy", "auto") or "auto"}
+        v = {"vnext": [{"address": host, "port": port, "users": [user]}]}
+        q = {k: [o.get(k, "")] for k in ("net", "tls", "sni", "host", "path", "fp", "alpn")}
+        q["type"] = [o.get("net", "tcp")]
         o2 = {"protocol": "vmess", "settings": v, "streamSettings": _stream_from_query(q, host)}
         return o2
     if proto in {"vless", "trojan"}:
         u = urlparse(uri)
         host, port = u.hostname or "", u.port or 443
-        if not host: raise ValueError("address missing")
+        if not host:
+            raise ValueError("address missing")
         q = parse_qs(u.query)
         if proto == "vless":
             user = {"id": unquote(u.username or ""), "encryption": q.get("encryption", ["none"])[0]}
             flow = q.get("flow", [""])[0]
-            if flow: user["flow"] = flow
+            if flow:
+                user["flow"] = flow
             settings = {"vnext": [{"address": host, "port": port, "users": [user]}]}
         else:
-            settings = {"servers": [{"address": host, "port": port, "password": unquote(u.username or "")}]} 
+            settings = {"servers": [{"address": host, "port": port, "password": unquote(u.username or "")}]}
         return {"protocol": proto, "settings": settings, "streamSettings": _stream_from_query(q, host)}
     if proto == "ss":
         rest = uri.split("://", 1)[1].split("#", 1)[0]
-        qpart = ""
-        if "?" in rest: rest, qpart = rest.split("?", 1)
-        # SIP002: base64(method:password@host:port), or base64(method:password)@host:port
+        if "?" in rest:
+            rest, _ = rest.split("?", 1)
         if "@" not in rest:
             dec = _b64decode(rest).decode("utf-8", "replace")
-            if "@" not in dec: raise ValueError("invalid shadowsocks URI")
+            if "@" not in dec:
+                raise ValueError("invalid shadowsocks URI")
             rest = dec
         userinfo, hp = rest.rsplit("@", 1)
-        if ":" not in userinfo: raise ValueError("invalid shadowsocks credentials")
+        if ":" not in userinfo:
+            raise ValueError("invalid shadowsocks credentials")
         method, password = userinfo.split(":", 1)
         host, port = _split_host_port(hp)
         return {"protocol": "shadowsocks", "settings": {"servers": [{"address": host, "port": port, "method": method, "password": password}]}}
     if proto == "hysteria2":
-        u = urlparse(uri); host, port = u.hostname or "", u.port or 443; q = parse_qs(u.query)
+        u = urlparse(uri)
+        host, port = u.hostname or "", u.port or 443
+        q = parse_qs(u.query)
         s = {"address": host, "port": port, "password": unquote(u.username or "")}
         obfs = q.get("obfs", [""])[0]
         if obfs:
             s["obfs"] = {"type": obfs, "password": q.get("obfs-password", [""])[0]}
-        tls = {"serverName": q.get("sni", [""])[0] or host, "allowInsecure": _bool(q.get("insecure", ["0"])[0])}
-        if q.get("alpn"): tls["alpn"] = q["alpn"][0].split(",")
-        s["tls"] = tls
+        s["tls"] = {"serverName": q.get("sni", [""])[0] or host, "allowInsecure": _bool(q.get("insecure", ["0"])[0])}
         return {"protocol": "hysteria2", "settings": {"servers": [s]}}
-    if proto == "wireguard":
-        u = urlparse(uri); host, port = u.hostname or "", u.port or 2408; q = parse_qs(u.query)
-        pub = q.get("publickey", [""])[0]
-        address = q.get("address", [""])[0]
-        if not pub or not address: raise ValueError("wireguard parameters missing")
-        return {"protocol": "wireguard", "settings": {"secretKey": unquote(u.username or ""), "address": [x.strip() for x in unquote(address).split(",") if x.strip()], "peers": [{"publicKey": pub, "endpoint": f"{host}:{port}", "keepAlive": 25}], "mtu": int(q.get("mtu", ["1280"])[0])}}
     raise ValueError(f"unsupported protocol: {proto}")
 
 
 def make_config(uri, socks_port):
-    outbound = outbound_from_uri(uri)
-    return {"log": {"loglevel": "none"}, "inbounds": [{"listen": "127.0.0.1", "port": socks_port, "protocol": "socks", "settings": {"auth": "noauth", "udp": False}}], "outbounds": [outbound]}
+    return {"log": {"loglevel": "none"}, "inbounds": [{"listen": "127.0.0.1", "port": socks_port, "protocol": "socks", "settings": {"auth": "noauth", "udp": False}}], "outbounds": [outbound_from_uri(uri)]}
 
 
-def _xray_test(binary, cfg):
-    p = subprocess_run([binary, "run", "-test", "-config", str(cfg)], timeout=5)
-    return p[0] == 0
-
-
-def subprocess_run(cmd, timeout):
+def _test_config(binary, cfg_path):
     import subprocess
     try:
-        r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=timeout)
-        return r.returncode, r.stdout, r.stderr
+        r = subprocess.run([binary, "run", "-test", "-config", str(cfg_path)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=8)
+        return r.returncode == 0
     except Exception:
-        return 124, b"", b""
+        return False
 
 
-async def probe_one(item, binary, sem, slot):
-    async with sem:
-        uri = item.get("config", "")
-        host = item.get("server", "")
-        with tempfile.TemporaryDirectory(prefix="xfinder-xray-") as td:
-            cfg_path = Path(td) / "config.json"
-            port = 20000 + (slot % 20000)
+async def _curl_probe(port):
+    for target in PROBE_URLS:
+        start = time.perf_counter()
+        proc = await asyncio.create_subprocess_exec(
+            "curl", "-fsS", "--max-time", str(max(2, int(DEFAULT_TIMEOUT))),
+            "--proxy", f"socks5h://127.0.0.1:{port}", "-o", "/dev/null",
+            "-w", "%{http_code}", target,
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
+        try:
+            out, _ = await asyncio.wait_for(proc.communicate(), timeout=DEFAULT_TIMEOUT + 1.5)
+        except asyncio.TimeoutError:
+            proc.kill()
+            await proc.communicate()
+            continue
+        code = out.decode(errors="ignore").strip()[:3]
+        if proc.returncode == 0 and code in {"200", "204", "301", "302", "403"}:
+            return True, round((time.perf_counter() - start) * 1000, 1)
+    return False, None
+
+
+async def _wait_port(port, timeout=2.0):
+    end = asyncio.get_running_loop().time() + timeout
+    while asyncio.get_running_loop().time() < end:
+        try:
+            r, w = await asyncio.wait_for(asyncio.open_connection("127.0.0.1", port), timeout=0.25)
+            w.close()
             try:
-                cfg_path.write_text(json.dumps(make_config(uri, port), ensure_ascii=False), encoding="utf-8")
-            except Exception as e:
-                item.update({"xray_tested": True, "xray_alive": False, "xray_error": str(e)[:180]})
-                return item
-            loop = asyncio.get_running_loop()
-            ok = await loop.run_in_executor(None, _xray_test, binary, cfg_path)
-            if not ok:
-                item.update({"xray_tested": True, "xray_alive": False, "xray_error": "xray config rejected"})
-                return item
-            import subprocess
-            try:
-                proc = await asyncio.create_subprocess_exec(binary, "run", "-c", str(cfg_path), stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
-                await asyncio.sleep(0.65)
-                alive = False; latency = None
-                for target in PROBE_URLS:
-                    start = time.perf_counter()
-                    curl = await asyncio.create_subprocess_exec("curl", "-fsS", "--max-time", str(max(2, int(DEFAULT_TIMEOUT))), "--proxy", f"socks5h://127.0.0.1:{port}", "-o", "/dev/null", "-w", "%{http_code}", target, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
-                    try:
-                        out, _ = await asyncio.wait_for(curl.communicate(), timeout=DEFAULT_TIMEOUT + 2)
-                    except asyncio.TimeoutError:
-                        curl.kill(); await curl.communicate(); continue
-                    if curl.returncode == 0 and out.decode(errors="ignore").strip()[:3] in {"200", "204", "301", "302", "403"}:
-                        alive = True; latency = round((time.perf_counter() - start) * 1000, 1); break
-                if proc.returncode is None:
-                    proc.terminate()
-                    try: await asyncio.wait_for(proc.wait(), 1.5)
-                    except asyncio.TimeoutError: proc.kill(); await proc.wait()
+                await w.wait_closed()
+            except Exception:
+                pass
+            return True
+        except Exception:
+            await asyncio.sleep(0.05)
+    return False
+
+
+async def _probe_batch(items, binary, batch_index):
+    base_port = 24000 + ((batch_index * BATCH_SIZE) % 8000)
+    prepared = []
+    for i, item in enumerate(items):
+        try:
+            out = outbound_from_uri(item.get("config", ""))
+            prepared.append((i, item, out, base_port + i))
+        except Exception as e:
+            item.update({"xray_tested": True, "xray_alive": False, "xray_error": str(e)[:180]})
+    if not prepared:
+        return items
+
+    cfg = {
+        "log": {"loglevel": "none"},
+        "inbounds": [],
+        "outbounds": [],
+        "routing": {"domainStrategy": "AsIs", "rules": []},
+    }
+    for i, item, out, port in prepared:
+        tag = f"o{i}"
+        in_tag = f"i{i}"
+        cfg["inbounds"].append({"tag": in_tag, "listen": "127.0.0.1", "port": port, "protocol": "socks", "settings": {"auth": "noauth", "udp": False}})
+        out["tag"] = tag
+        cfg["outbounds"].append(out)
+        cfg["routing"]["rules"].append({"type": "field", "inboundTag": [in_tag], "outboundTag": tag})
+
+    with tempfile.TemporaryDirectory(prefix="xfinder-xray-batch-") as td:
+        cfg_path = Path(td) / "config.json"
+        cfg_path.write_text(json.dumps(cfg, ensure_ascii=False), encoding="utf-8")
+        loop = asyncio.get_running_loop()
+        ok = await loop.run_in_executor(None, _test_config, binary, cfg_path)
+        if not ok:
+            # Fall back to per-config syntax tests only for a malformed batch.
+            for i, item, out, port in prepared:
+                single = Path(td) / f"single-{i}.json"
+                single.write_text(json.dumps(make_config(item.get("config", ""), port), ensure_ascii=False), encoding="utf-8")
+                syntax = await loop.run_in_executor(None, _test_config, binary, single)
+                item.update({"xray_tested": True, "xray_alive": False, "xray_error": "xray config rejected" if not syntax else "batch config rejected"})
+            return items
+        try:
+            proc = await asyncio.create_subprocess_exec(binary, "run", "-c", str(cfg_path), stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+            ports = await asyncio.gather(*[_wait_port(port) for _, _, _, port in prepared])
+            results = await asyncio.gather(*[_curl_probe(port) if ready else asyncio.sleep(0, result=(False, None)) for (_, _, _, port), ready in zip(prepared, ports)])
+            for (i, item, _, port), (alive, latency) in zip(prepared, results):
                 item.update({"xray_tested": True, "xray_alive": alive, "http_ping_ms": latency})
-                if not alive: item["xray_error"] = "proxy HTTPS probe failed"
-                return item
-            except Exception as e:
+                if not alive:
+                    item["xray_error"] = "proxy HTTPS probe failed"
+            if proc.returncode is None:
+                proc.terminate()
                 try:
-                    if proc.returncode is None: proc.kill()
-                except Exception: pass
+                    await asyncio.wait_for(proc.wait(), 1.5)
+                except asyncio.TimeoutError:
+                    proc.kill()
+                    await proc.wait()
+        except Exception as e:
+            for _, item, _, _ in prepared:
                 item.update({"xray_tested": True, "xray_alive": False, "xray_error": str(e)[:180]})
-                return item
+    return items
 
 
 async def validate_xray(items, binary="xray"):
-    sem = asyncio.Semaphore(CONCURRENCY)
-    tasks = [probe_one(dict(x), binary, sem, i) for i, x in enumerate(items)]
-    return await asyncio.gather(*tasks)
+    # De-duplicate exact URIs before expensive real validation.
+    unique = []
+    seen = set()
+    for item in items:
+        cfg = item.get("config", "")
+        if not cfg or cfg in seen:
+            continue
+        seen.add(cfg)
+        unique.append(dict(item))
+    results = []
+    for start in range(0, len(unique), BATCH_SIZE):
+        batch = unique[start:start + BATCH_SIZE]
+        results.extend(await _probe_batch(batch, binary, start // BATCH_SIZE))
+        print(f"Xray validation: {min(start + BATCH_SIZE, len(unique))}/{len(unique)}")
+    return results

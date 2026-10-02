@@ -10,7 +10,7 @@ TCP_TIMEOUT = 5.0
 HTTP_TIMEOUT = 8.0
 MIN_TRUST = 60
 MAX_REMIX_PING = 70
-REMIX_PER_CONFIG = 3
+REMIX_PER_CONFIG = 2
 
 SOURCES = [
     {"name":"Au1rxx/free-vpn-subscriptions","url":"https://github.com/Au1rxx/free-vpn-subscriptions/raw/main/output/v2ray-base64.txt","trust":100,"has_http_test":True},
@@ -28,7 +28,7 @@ BLACKLIST = {"v2ray_configs_pool","nim_vpn_ir","outline_vpn","hope_net","proxyst
 
 # --- سرعت و حجم خروجی ---
 MAX_PUBLISH_BASE = 1200      # فقط سریع‌ترین کانفیگ‌های اصلی منتشر می‌شوند تا سایت سنگین نشود
-REMIX_BASE_LIMIT = 250       # فقط بهترین کانفیگ‌ها با IP تمیز ترکیب می‌شوند
+REMIX_BASE_LIMIT = 150       # فقط بهترین کانفیگ‌ها با IP تمیز ترکیب می‌شوند
 # --- WireGuard (Cloudflare WARP) ---
 WG_ACCOUNTS = 3              # تعداد حساب WARP که نگه‌داری می‌شود
 WG_ENDPOINTS_PER_ACCOUNT = 6 # هر حساب با چند IP تمیز ساخته می‌شود

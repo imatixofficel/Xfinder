@@ -12,12 +12,12 @@ permissions:
 
 concurrency:
   group: xfinder-pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -52,8 +52,9 @@ jobs:
       - name: Run collector, scanner, remix and real Xray validation
         env:
           XRAY_BIN: ${{ runner.temp }}/xray
-          XRAY_CONCURRENCY: "16"
-          XRAY_PROBE_TIMEOUT: "7"
+          XRAY_CONCURRENCY: "32"
+          XRAY_BATCH_SIZE: "32"
+          XRAY_PROBE_TIMEOUT: "5"
         run: python -m src.main
 
       - name: Build clean Pages artifact

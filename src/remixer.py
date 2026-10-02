@@ -5,7 +5,8 @@ from .config import CLEAN_IPS_URL, MAX_REMIX_PING, REMIX_PER_CONFIG, REMIX_BASE_
 
 SCAN_PORTS = (443, 8443, 2053, 2083, 2087, 2096, 80, 8080)
 SCAN_TIMEOUT = 1.5
-SCAN_CONCURRENCY = 200
+SCAN_CONCURRENCY = 300
+MAX_SOURCE_IPS = 400
 
 
 def _fetch_source():
@@ -79,6 +80,7 @@ async def fetch_clean_async():
         loop = asyncio.get_running_loop()
         raw = await loop.run_in_executor(None, _fetch_source)
         if not raw: return []
+        raw = sorted(raw, key=lambda x: x["ping"])[:MAX_SOURCE_IPS]
         scanned = await _scan(raw)
         return [x for x in scanned if x["ping"] <= MAX_REMIX_PING]
     except Exception as e:
