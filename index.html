@@ -5,7 +5,18 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0f0f0f">
 <meta name="description" content="Xfinder — کانفیگ‌های تست‌شده V2Ray و WireGuard با IP تمیز">
-<link rel="icon" href="assets/img/favicon.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="assets/img/icon-192.png">
+<link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="canonical" href="https://imatixofficel.github.io/Xfinder/">
+<meta property="og:title" content="Xfinder">
+<meta property="og:description" content="کانفیگ‌های تست‌شده V2Ray و WireGuard با IP تمیز">
+<meta property="og:image" content="https://imatixofficel.github.io/Xfinder/assets/img/icon-512.png">
+<meta property="og:url" content="https://imatixofficel.github.io/Xfinder/">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Xfinder"><meta name="application-name" content="Xfinder">
 <title>Xfinder</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&family=Unbounded:wght@700;800&family=Inter:wght@500;600;700&display=swap">
@@ -29,7 +40,14 @@
     <button class="nav" data-go="wireguard"><svg class="i" data-ic="shield"></svg><span>WireGuard</span><em id="navWg">0</em></button>
     <button class="nav" data-go="sources"><svg class="i" data-ic="globe"></svg><span data-i="sources">منابع</span></button>
     <div class="cap" data-i="system">سیستم</div>
+    <button class="nav" data-go="donate"><svg class="i" data-ic="gift"></svg><span data-i="donate">اهدای کانفیگ</span><em id="navDon">0</em></button>
+    <button class="nav" data-go="about"><svg class="i" data-ic="info"></svg><span data-i="about">درباره</span></button>
     <button class="nav" data-go="settings"><svg class="i" data-ic="gear"></svg><span data-i="settings">تنظیمات</span></button>
+    <div class="cap" data-i="links">لینک‌ها</div>
+    <a class="nav lnk" href="https://github.com/imatixofficel" target="_blank" rel="noopener noreferrer"><svg class="i" data-ic="github"></svg><span class="latin">GitHub</span></a>
+    <a class="nav lnk" href="https://t.me/Imatix7" target="_blank" rel="noopener noreferrer"><svg class="i" data-ic="telegram"></svg><span class="latin">Telegram</span></a>
+    <a class="nav lnk" href="https://youtube.com/@i.matix7" target="_blank" rel="noopener noreferrer"><svg class="i" data-ic="youtube"></svg><span class="latin">YouTube</span></a>
+    <button class="nav lnk" id="install" type="button"><svg class="i" data-ic="download"></svg><span data-i="install">نصب وب‌اپ روی گوشی</span></button>
     <div class="promo"><span class="tag">AUTO</span><div class="orb"><svg class="i" data-ic="bolt"></svg></div><p data-i="promo">کانفیگ‌ها <b>هر ۱۰ دقیقه</b><br>خودکار تازه می‌شوند</p></div>
   </aside>
   <div class="scrim" id="scrim"></div>
@@ -44,13 +62,14 @@
     </div>
 
     <section class="sec on" id="dashboard">
-      <div class="head"><div><h1 data-i="welcome">به Xfinder خوش آمدید!</h1><p class="sub"><span data-i="updated">آخرین بروزرسانی</span>: <span id="upd">—</span></p></div></div>
+      <div class="head"><div><h1 data-i="welcome">به Xfinder خوش آمدید!</h1><p class="sub"><span data-i="updated">آخرین بروزرسانی</span>: <span id="upd">—</span> · <span id="cleanInfo"></span></p></div></div>
       <div class="grid3">
         <div class="card qs">
           <div class="skel"><i></i><i></i><i></i></div>
           <h3 data-i="qs_t">اشتراک شخصی خودت را بساز</h3>
           <p class="m" data-i="qs_d">همه کانفیگ‌های سالم در یک لینک؛ در برنامه‌ات وارد کن و تمام.</p>
-          <button class="pill" id="copySub"><span data-i="qs_b">کپی لینک اشتراک</span></button>
+          <div class="btns2"><button class="pill" id="copySub"><span data-i="qs_b">کپی لینک اشتراک</span></button>
+          <button class="pill alt" id="topBtn"><svg class="i" data-ic="bolt"></svg><span data-i="top_b">تست و ۲۰ کانفیگ برتر</span></button></div>
         </div>
         <div class="card">
           <div class="chart-h"><h3 class="latin">Latency / Top 7</h3><span class="chipg latin" id="liveChip">LIVE</span></div>
@@ -86,6 +105,30 @@
       <div class="sgrid" id="srcList"></div>
     </section>
 
+    <section class="sec" id="donate">
+      <div class="head"><div><h2 data-i="donate">اهدای کانفیگ</h2><p class="sub" data-i="don_d">کانفیگ خودت را اهدا کن؛ بعد از تست واقعی ۲۴ ساعت به همه نمایش داده می‌شود و خودکار حذف می‌شود.</p></div></div>
+      <div class="card donform">
+        <h3 data-i="don_t">ثبت اهدای جدید</h3>
+        <label class="fl"><span data-i="don_cfg">کانفیگ‌ها (حداکثر ۳ تا، هر کدام در یک خط)</span><textarea id="donCfg" rows="3" dir="ltr" placeholder="vless://… / vmess://… / trojan://… / ss://… / hysteria2://…"></textarea></label>
+        <label class="fl"><span data-i="don_ad">متن تبلیغاتی (اختیاری، حداکثر ۲۰۰ کاراکتر)</span><input id="donAd" maxlength="200" data-ip="don_ad_ph" placeholder="مثلاً: کانال تلگرام من @…"></label>
+        <p class="m" data-i="don_note">ثبت از طریق یک Issue در GitHub انجام می‌شود (نیاز به حساب GitHub). فقط کانفیگ‌هایی که تست واقعی را پاس کنند نمایش داده می‌شوند.</p>
+        <button class="pill" id="donSend"><span data-i="don_send">ارسال اهدا</span></button>
+      </div>
+      <div class="head" style="margin-top:20px"><div><h3 data-i="don_list">اهدای‌های فعال</h3></div></div>
+      <div class="dgrid" id="donList"></div>
+    </section>
+
+    <section class="sec" id="about">
+      <div class="head"><div><h2 data-i="about">درباره</h2></div></div>
+      <div class="card aboutc">
+        <img src="assets/img/logo.png" alt="Xfinder" width="84" height="84">
+        <h3 class="latin">Xfinder</h3>
+        <p data-i="about_t">این پروژه توسط <b>متیکس (Matix)</b> توسعه داده شده است.</p>
+        <p class="m" data-i="about_r">© تمام حقوق این پروژه محفوظ است.</p>
+        <p class="m latin"><a href="https://imatixofficel.github.io/Xfinder/" target="_blank" rel="noopener noreferrer">imatixofficel.github.io/Xfinder</a></p>
+      </div>
+    </section>
+
     <section class="sec" id="settings">
       <div class="head"><div><h2 data-i="settings">تنظیمات</h2></div></div>
       <div class="set">
@@ -98,6 +141,12 @@
 
 <div class="toast" id="toast"></div>
 <div class="modal" id="qr"><div class="mb"><button class="x" id="qx">×</button><h3 class="latin">QR</h3><img id="qimg" alt="QR"><code id="qtxt"></code><button class="pill" id="qcopy" style="margin:auto"><span data-i="copy">کپی</span></button></div></div>
+<div class="modal" id="topm"><div class="mb wide"><button class="x" id="topx">×</button><h3 data-i="top_t">۲۰ کانفیگ برتر</h3>
+  <p class="sub" id="topInfo"></p>
+  <code id="topLink"></code>
+  <div class="btns2"><button class="pill sm" id="topCopy"><span data-i="top_copy">کپی لینک اشتراک</span></button><button class="ghost" id="topAll"><span data-i="top_all">کپی همه کانفیگ‌ها</span></button><button class="ghost" id="topQr">QR</button></div>
+  <div class="toplist" id="topList"></div></div></div>
+<div class="modal" id="iosm"><div class="mb"><button class="x" id="iosx">×</button><h3 data-i="install">نصب وب‌اپ روی گوشی</h3><p class="m" id="iosTxt" style="line-height:2"></p></div></div>
 <script src="assets/js/app.js"></script>
 </body>
 </html>

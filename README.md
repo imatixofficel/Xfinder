@@ -1,63 +1,102 @@
-# Xfinder — نسخه کامل و اصلاح‌شده
+<div align="center">
 
-Xfinder یک Collector خودکار برای کانفیگ‌های عمومی VLESS / VMess / Trojan / Shadowsocks / Hysteria2 است.
-Pipeline هر ۱۰ دقیقه اجرا می‌شود و ترتیب آن این است:
+<img src="assets/img/logo.png" width="120" alt="Xfinder">
 
-```text
-Collect sources
-   ↓
-TCP pre-check
-   ↓
-Real Xray config test
-   ↓
-Real HTTPS request through Xray SOCKS
-   ↓
-Clean-IP source (Scanner-matix)
-   ↓
-Independent TCP scan of candidate IPs/ports
-   ↓
-Remix config + clean IP
-   ↓
-Real Xray + HTTPS test again
-   ↓
-Publish only verified proxy configs
-   ↓
-GitHub Pages
-```
+# Xfinder
 
-## تفاوت مهم این نسخه
+**کانفیگ‌های تست‌شده V2Ray / WireGuard با IP تمیز — به‌روزرسانی خودکار هر ۱۰ دقیقه**
 
-- فقط باز بودن TCP کافی نیست؛ کانفیگ باید توسط Xray پذیرفته شود و یک HTTPS request واقعی از تونل عبور کند.
-- IPهای Clean-IP از Scanner-matix دریافت می‌شوند، سپس Xfinder خودش IP/Portهای قابل‌دسترسی را دوباره TCP-check می‌کند.
-- Remix قبل از انتشار یک بار دیگر با Xray تست می‌شود.
-- فایل‌های تولیدی `data/` و `output/` دیگر توسط GitHub Actions به `main` commit نمی‌شوند؛ بنابراین اجرای خودکار نباید Merge Conflict ایجاد کند.
-- Artifact نهایی مستقیماً با GitHub Pages Deploy می‌شود.
-- کلید خصوصی WARP روی سرور ذخیره/منتشر نمی‌شود؛ بخش ساخت WireGuard اختصاصی در مرورگر باقی می‌ماند.
-- `sources.db` و خروجی‌های runtime هم generated هستند و در Git نگه‌داری نمی‌شوند.
+🌐 **آدرس پروژه:** https://imatixofficel.github.io/Xfinder/
+
+[GitHub](https://github.com/imatixofficel) · [Telegram](https://t.me/Imatix7) · [YouTube](https://youtube.com/@i.matix7)
+
+</div>
+
+> این پروژه توسط **متیکس (Matix)** توسعه داده شده است. © تمام حقوق محفوظ است.
+
+---
+
+## Xfinder چیست؟
+
+Xfinder یک Collector خودکار برای کانفیگ‌های **عمومی** VLESS / VMess / Trojan / Shadowsocks / Hysteria2 است. هر ۱۰ دقیقه GitHub Actions منابع را می‌خواند، کانفیگ‌ها را با **Xray واقعی** و یک درخواست **HTTPS واقعی** تست می‌کند، بهترین‌ها را با IP تمیز [Scanner-matix](https://github.com/imatixofficel/Scanner-matix) ترکیب (Remix) و دوباره تست می‌کند و فقط موارد سالم را روی GitHub Pages منتشر می‌کند.
+
+## چطور استفاده کنم؟
+
+۱. وارد **https://imatixofficel.github.io/Xfinder/** شو.
+۲. در داشبورد روی **«کپی لینک اشتراک»** بزن و لینک را در برنامه‌ات (v2rayNG، Hiddify، Streisand، NekoBox، …) به‌صورت Subscription اضافه کن.
+۳. برای سریع‌ترین‌ها روی **«تست و ۲۰ کانفیگ برتر»** بزن؛ لینک اشتراک ۲۰ کانفیگ با کمترین پینگ واقعی را می‌گیری.
+۴. هر کانفیگ یک **نام** دارد (مثل `Xfinder • VLESS • 85ms • 003`؛ `✦` یعنی ترکیب‌شده با IP تمیز) که در برنامه‌ات هم دیده می‌شود.
+
+### لینک‌های اشتراک (Subscription)
+
+| فایل | آدرس |
+| --- | --- |
+| همه‌ی کانفیگ‌ها | https://imatixofficel.github.io/Xfinder/output/all.txt |
+| ۲۰ کانفیگ برتر | https://imatixofficel.github.io/Xfinder/output/top20.txt |
+| ۲۰ برتر (Base64) | https://imatixofficel.github.io/Xfinder/output/top20-b64.txt |
+| VLESS | https://imatixofficel.github.io/Xfinder/output/vless.txt |
+| VMess | https://imatixofficel.github.io/Xfinder/output/vmess.txt |
+| Trojan | https://imatixofficel.github.io/Xfinder/output/trojan.txt |
+| Shadowsocks | https://imatixofficel.github.io/Xfinder/output/ss.txt |
+| Hysteria2 | https://imatixofficel.github.io/Xfinder/output/hysteria2.txt |
+
+> با همین آدرس‌ها می‌شود پروژه را در برنامه‌ها **Mark / Subscription** کرد.
+
+## امکانات
+
+- **منوی همبرگری:** داشبورد، کانفیگ‌ها، WireGuard، منابع، اهدای کانفیگ، درباره، تنظیمات، لینک GitHub / Telegram / YouTube و دکمه‌ی نصب وب‌اپ.
+- **نصب روی گوشی (PWA):** از منو «نصب وب‌اپ روی گوشی». در Android/Chrome نصب مستقیم؛ در iPhone از Safari → Share → Add to Home Screen.
+- **WireGuard شخصی:** کلید در مرورگر خودت ساخته می‌شود (WebCrypto، و اگر مرورگر X25519 را نداشت، پیاده‌سازی JS داخلی). کلید خصوصی هیچ‌جا ارسال نمی‌شود؛ فقط کلید عمومی برای ثبت حساب WARP به Cloudflare می‌رود.
+- **ترکیب با IP تمیز:** کانفیگ‌های VLESS / VMess / Trojan با IP تمیز Scanner-matix ترکیب و دوباره با Xray تست می‌شوند. وضعیت Scanner-matix بالای داشبورد نمایش داده می‌شود.
+- **اسکن خودکار منابع:** علاوه بر منابع ثابت، هر اجرا چند مخزن تازه‌ی GitHub را پیدا می‌کند (`src/discover.py`، با `DISCOVER_SOURCES=0` خاموش می‌شود). منابع کشف‌شده trust پایین دارند و کانفیگ‌هایشان مثل بقیه تست می‌شود.
+- **اهدای کانفیگ:** پایین را ببین.
+
+## اهدای کانفیگ (۲۴ ساعته)
+
+1. در منو → **اهدای کانفیگ**، حداکثر ۳ کانفیگ و یک متن تبلیغاتی کوتاه (اختیاری، حداکثر ۲۰۰ کاراکتر) بنویس و «ارسال اهدا» را بزن.
+2. یک Issue با فرم آماده در GitHub باز می‌شود (حساب GitHub لازم است). Workflow `donations.yml` آن را در پوشه‌ی `donations/` ذخیره و Issue را می‌بندد.
+3. در اجرای بعدی (≤ ۱۰ دقیقه) کانفیگ‌ها با Xray + HTTPS واقعی تست می‌شوند؛ **فقط سالم‌ها** همراه متن تبلیغاتی نمایش داده می‌شوند.
+4. بعد از **۲۴ ساعت** فایل اهدا به‌صورت خودکار حذف می‌شود (پاکسازی ساعتی). هر کاربر هم‌زمان یک اهدای فعال می‌تواند داشته باشد.
+
+متن تبلیغاتی فقط به‌صورت متن ساده نمایش داده می‌شود (HTML/لینک فعال نمی‌شود).
 
 ## نصب در GitHub
 
 1. محتویات این ZIP را داخل repository قرار بده.
 2. در **Settings → Pages → Build and deployment → Source**، گزینه **GitHub Actions** را انتخاب کن.
-3. از **Actions → Xfinder Auto Update → Run workflow** اولین اجرا را دستی شروع کن.
-4. بعد از موفقیت اولین اجرا، Workflow طبق schedule هر ۱۰ دقیقه اجرا می‌شود.
+3. در **Settings → Actions → General → Workflow permissions** گزینه **Read and write permissions** را فعال کن (برای `donations.yml`).
+4. از **Actions → Xfinder Auto Update → Run workflow** اولین اجرا را دستی شروع کن؛ بعد از آن هر ۱۰ دقیقه خودکار اجرا می‌شود.
+
+> نکته: GitHub زمان‌بندی `cron` را گاهی چند دقیقه دیر اجرا می‌کند؛ «هر ۱۰ دقیقه» یعنی تقریباً هر ۱۰ دقیقه.
 
 ### اگر repository قبلی داری
 
-چون نسخه‌های قدیمی ممکن است `data/` و `output/` را قبلاً track کرده باشند، فقط یک بار در Git Bash این کار را انجام بده:
-
 ```bash
 git rm -r --cached data output sources.db
-
-git add .gitignore package.json .github src assets index.html README.md requirements.txt
-
-git commit -m "chore: stop tracking generated Xfinder output"
+git add .gitignore package.json .github src assets index.html manifest.webmanifest sw.js favicon.ico README.md requirements.txt donations tests
+git commit -m "chore: Xfinder v2.5"
 git push
 ```
 
-اگر یکی از مسیرها قبلاً وجود نداشت، Git پیام خطای مربوط به همان مسیر را می‌دهد؛ مسیر موجود را حذف کن و دوباره دستور را اجرا کن.
+اگر یکی از مسیرها قبلاً وجود نداشت، Git خطای همان مسیر را می‌دهد؛ آن را حذف کن و دوباره اجرا کن.
 
-بعد از این commit، اجرای Collector دیگر `data/output` را به `main` push نمی‌کند.
+## ساختار فرایند
+
+```text
+Collect (منابع ثابت + اسکن خودکار + Xfinder خودش)
+   ↓
+TCP pre-check → Real Xray config test → Real HTTPS request through Xray
+   ↓
+Clean-IP source (Scanner-matix) → TCP scan → Remix → Real Xray + HTTPS دوباره
+   ↓
+Donations (تست جدا) → نام‌گذاری → top20 → Publish به GitHub Pages
+```
+
+## محدودیت‌های فنی (صادقانه)
+
+- **Remix فقط VLESS / VMess / Trojan:** جایگزینی IP تمیز Cloudflare فقط برای کانفیگ‌هایی کار می‌کند که پشت CDN هستند. Shadowsocks ساده و Hysteria2 (UDP/QUIC) از Cloudflare عبور نمی‌کنند، پس ترکیب آن‌ها معنی ندارد. هر Remix قبل از انتشار تست می‌شود و ناموفق‌ها منتشر نمی‌شوند.
+- **«تست» دکمه‌ی ۲۰ برتر** نتیجه‌ی آخرین تست واقعی سرور (هر ۱۰ دقیقه) است؛ مرورگر نمی‌تواند خودش یک پروکسی را واقعاً تست کند.
+- ساخت WireGuard به API Cloudflare بستگی دارد؛ اگر Cloudflare مرورگر را محدود کند، چند مسیر جایگزین امتحان می‌شود.
 
 ## اجرای محلی
 
@@ -90,6 +129,8 @@ Workflow خروجی را در Artifact مربوط به GitHub Pages قرار م�
 - `output/ss.txt`
 - `output/hysteria2.txt`
 - `output/wireguard.txt`
+- `output/top20.txt` و `output/top20-b64.txt` (۲۰ کانفیگ برتر)
+- `data/donations.json`
 - `data/configs.json`
 
 این فایل‌ها **generated** هستند و نباید دستی در Git تغییر داده شوند.
@@ -100,7 +141,7 @@ Xfinder فقط کانفیگ‌های عمومی منابع تعریف‌شده �
 
 ## v2.4 — پایداری و رفع هنگ‌کردن Actions
 
-- پایپ‌لاین بودجهٔ زمانی دارد (`PIPELINE_BUDGET`، پیش‌فرض ۸۴۰ ثانیه) و همیشه تمام می‌شود؛ هر مرحله deadline جدا دارد.
+- پایپ‌لاین بودجهٔ زمانی دارد (`PIPELINE_BUDGET`، پیش‌فرض ۵۲۰ ثانیه تا اجرا در بازه‌ی ۱۰ دقیقه جا شود) و همیشه تمام می‌شود؛ هر مرحله deadline جدا دارد.
 - لاگ‌ها بلافاصله چاپ می‌شوند (`PYTHONUNBUFFERED`) تا پیشرفت در Actions دیده شود.
 - نمونه‌گیری تصادفی از هر منبع (`MAX_PER_SOURCE`) و سقف کاندیدای Xray (`MAX_XRAY_CANDIDATES`).
 - DNS با thread-pool بزرگ؛ پایان فرایند با `os._exit` تا threadهای معلق job را نگه ندارند.

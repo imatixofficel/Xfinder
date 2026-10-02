@@ -7,6 +7,8 @@ from .validator import validate
 from .xray_probe import validate_xray, check_binary
 from .remixer import fetch_clean_async, build_with
 from .publisher import publish
+from .donations import load_active, cleanup
+from .naming import original_name, rename
 
 
 def log(*a):
@@ -54,16 +56,22 @@ async def run():
     init_db()
     DATA_DIR.mkdir(parents=True, exist_ok=True)
 
+    # 0) اهدای کانفیگ: فایل‌های منقضی (بیش از ۲۴ ساعت) پاک می‌شوند.
+    try:
+        cleanup()
+    except Exception as e:
+        log("donation cleanup skipped:", e)
+
     # 1) Collect -> TCP pre-filter -> real Xray/HTTPS probe.
     raw = await collect()
     log(f"collected {len(raw)} unique configs in {time.monotonic() - t0:.0f}s")
     validated = await _real_validate(raw, "base", t0 + 0.25 * b, t0 + 0.70 * b)
 
     # 2) Clean-IP scanner results -> remix -> real Xray probe again.
-    remixed = []
+    remixed, clean = [], []
     if validated and time.monotonic() < t0 + 0.80 * b:
         clean = await fetch_clean_async()
-        log(f"clean IPs usable: {len(clean)}")
+        log(f"clean IPs usable: {len(clean)}" if clean else "clean IPs: Scanner-matix returned nothing usable; remix skipped")
         _, candidates = build_with(validated, clean)
         remixed = await _real_validate(candidates, "remix", t0 + 0.85 * b, t0 + 0.95 * b)
         for x in remixed:
@@ -76,7 +84,31 @@ async def run():
     # Automatic WARP generation is intentionally not published: a generated
     # WireGuard private key is a credential. The browser-side generator remains
     # available in the site for personal configs.
-    publish(validated, remixed, [], list(SOURCE_STATS), len(raw))
+    # 3) کانفیگ‌های اهدایی: جدا و با همان تست واقعی Xray؛ فقط سالم‌ها نمایش داده می‌شوند.
+    donations = []
+    try:
+        active = load_active()
+        flat = [{"config": c, "source": f"Donation #{d['id']}", "trust_score": 70}
+                for d in active for c in d["configs"]]
+        if flat:
+            ok = await _real_validate(flat, "donation", time.monotonic() + 40, time.monotonic() + 100)
+            good = {x["config"]: x for x in ok}
+            for d in active:
+                rows = []
+                for c in d["configs"]:
+                    x = good.get(c)
+                    if x:
+                        ping = x.get("http_ping_ms") or x.get("tcp_ping_ms")
+                        rows.append({"config": c, "name": original_name(c)[:60] or f"Donation-{d['id']}",
+                                     "protocol": x.get("protocol"), "ping": ping})
+                if rows:
+                    donations.append({"id": d["id"], "user": d.get("user", ""), "ad": d.get("ad", ""),
+                                      "created_at": d["created_at"], "expires_at": d["expires_at"], "configs": rows})
+        log(f"donations: {len(active)} active, {len(donations)} verified")
+    except Exception as e:
+        log("donations skipped:", e)
+
+    publish(validated, remixed, [], list(SOURCE_STATS), len(raw), donations, len(clean))
     log(f"Xfinder complete in {time.monotonic() - t0:.0f}s: {len(validated)} real-tested, "
         f"{len(remixed)} real-tested remix")
 

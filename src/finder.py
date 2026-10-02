@@ -2,6 +2,7 @@
 import asyncio, base64, json, random, re
 from urllib.request import Request, urlopen
 from .config import SOURCES, BLACKLIST, MAX_PER_SOURCE
+from .discover import discover
 
 URI_PATTERN = re.compile(r"(?i)(?:vless|vmess|trojan|ss|hysteria2)://[^\s\"'<>\\]+")
 MAX_BYTES = 40_000_000
@@ -102,7 +103,11 @@ async def collect():
             SOURCE_STATS.append({"name": src["name"], "trust": src["trust"], "count": 0, "ok": False})
             return []
 
-    batches = await asyncio.gather(*(one(s) for s in SOURCES))
+    try:
+        extra = await loop.run_in_executor(None, discover, [x["name"] for x in SOURCES])
+    except Exception:
+        extra = []
+    batches = await asyncio.gather(*(one(s) for s in list(SOURCES) + extra))
     seen = set()
     for batch in batches:
         for it in batch:

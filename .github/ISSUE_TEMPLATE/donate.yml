@@ -1,0 +1,19 @@
+name: اهدای کانفیگ / Donate configs
+description: کانفیگ خودت را اهدا کن؛ بعد از تست واقعی ۲۴ ساعت نمایش داده می‌شود.
+title: "Donate"
+labels: ["donation"]
+body:
+  - type: textarea
+    id: configs
+    attributes:
+      label: Configs
+      description: حداکثر ۳ کانفیگ (vless / vmess / trojan / ss / hysteria2)، هر کدام در یک خط.
+    validations:
+      required: true
+  - type: input
+    id: ad
+    attributes:
+      label: Ad
+      description: متن تبلیغاتی اختیاری (حداکثر ۲۰۰ کاراکتر، فقط متن ساده).
+    validations:
+      required: false

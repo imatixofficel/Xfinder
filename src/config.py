@@ -22,8 +22,8 @@ def _env_int(name, default):
 
 
 # --- Time / size budgets (the pipeline must ALWAYS finish and publish) ---
-PIPELINE_BUDGET = _env_float("PIPELINE_BUDGET", 840)   # seconds for the whole run
-MAX_PER_SOURCE = _env_int("MAX_PER_SOURCE", 3000)      # random sample per source
+PIPELINE_BUDGET = _env_float("PIPELINE_BUDGET", 520)   # seconds for the whole run
+MAX_PER_SOURCE = _env_int("MAX_PER_SOURCE", 2000)      # random sample per source
 MAX_TCP_CANDIDATES = _env_int("MAX_TCP_CANDIDATES", 20000)
 MAX_XRAY_CANDIDATES = _env_int("MAX_XRAY_CANDIDATES", 1600)
 MAX_PER_ENDPOINT = 3                                   # same host:port variants
@@ -45,15 +45,37 @@ SOURCES = [
     {"name":"MatinGhanbari/v2ray-configs","url":"https://raw.githubusercontent.com/MatinGhanbari/v2ray-configs/main/subscriptions/v2ray/super-sub.txt","trust":85,"has_http_test":False},
     {"name":"ebrasha/free-v2ray-public-list","url":"https://raw.githubusercontent.com/ebrasha/free-v2ray-public-list/main/V2Ray-Config-By-EbraSha.txt","trust":84,"has_http_test":False},
     {"name":"R3ZARAHIMI/tg-v2ray-configs-every2h","url":"https://raw.githubusercontent.com/R3ZARAHIMI/tg-v2ray-configs-every2h/main/all.txt","trust":80,"has_http_test":False},
+    # --- منابع اضافه‌شده (هر منبعی که از دسترس خارج شود خودکار نادیده گرفته می‌شود) ---
+    {"name":"yebekhe/TelegramV2rayCollector","url":"https://raw.githubusercontent.com/yebekhe/TelegramV2rayCollector/main/sub/normal/mix","trust":82,"has_http_test":False},
+    {"name":"Pawdroid/Free-servers","url":"https://raw.githubusercontent.com/Pawdroid/Free-servers/main/sub","trust":78,"has_http_test":False},
+    {"name":"ermaozi/get_subscribe","url":"https://raw.githubusercontent.com/ermaozi/get_subscribe/main/subscribe/v2ray.txt","trust":76,"has_http_test":False},
+    {"name":"mfuu/v2ray","url":"https://raw.githubusercontent.com/mfuu/v2ray/master/v2ray","trust":75,"has_http_test":False},
+    {"name":"Danialsamadi/v2go","url":"https://raw.githubusercontent.com/Danialsamadi/v2go/main/AllConfigsSub.txt","trust":75,"has_http_test":False},
+    {"name":"MahsaNetConfigTopic/config","url":"https://raw.githubusercontent.com/MahsaNetConfigTopic/config/main/xray_final.txt","trust":74,"has_http_test":False},
+    {"name":"10ium/V2Hub3","url":"https://raw.githubusercontent.com/10ium/V2Hub3/main/merged_base64","trust":72,"has_http_test":False},
+    {"name":"Leon406/SubCrawler","url":"https://raw.githubusercontent.com/Leon406/SubCrawler/master/sub/share/v2","trust":70,"has_http_test":False},
+    {"name":"Xfinder (self)","url":"https://imatixofficel.github.io/Xfinder/output/all.txt","trust":70,"has_http_test":True},
 ]
 CLEAN_IPS_URL = "https://raw.githubusercontent.com/imatixofficel/Scanner-matix/main/data/clean_ips.json"
 BLACKLIST = {"v2ray_configs_pool","nim_vpn_ir","outline_vpn","hope_net","proxystore11","yaney_01","fnet00","ShadowProxy66","zibanabz"}
 
 # --- سرعت و حجم خروجی ---
-MAX_PUBLISH_BASE = 1200      # فقط سریع‌ترین کانفیگ‌های اصلی منتشر می‌شوند تا سایت سنگین نشود
-REMIX_BASE_LIMIT = 150       # فقط بهترین کانفیگ‌ها با IP تمیز ترکیب می‌شوند
+MAX_PUBLISH_BASE = 1000      # فقط سریع‌ترین کانفیگ‌های اصلی منتشر می‌شوند تا سایت سنگین نشود
+REMIX_BASE_LIMIT = 400       # فقط بهترین کانفیگ‌ها با IP تمیز ترکیب می‌شوند
 # --- WireGuard (Cloudflare WARP) ---
 WG_ACCOUNTS = 3              # تعداد حساب WARP که نگه‌داری می‌شود
 WG_ENDPOINTS_PER_ACCOUNT = 6 # هر حساب با چند IP تمیز ساخته می‌شود
 WG_PORT = 2408
 WARP_ACCOUNTS_FILE = DATA_DIR / "warp_accounts.json"
+
+# --- اهدای کانفیگ / ۲۴ ساعته ---
+DONATIONS_DIR = ROOT / "donations"
+DONATION_TTL_HOURS = 24
+MAX_DONATION_CONFIGS = 3
+MAX_DONATION_AD = 200
+# --- اشتراک ۲۰ کانفیگ برتر ---
+TOP_N = 20
+# --- اسکن خودکار GitHub برای پیدا کردن منبع جدید ---
+DISCOVER_SOURCES = os.getenv("DISCOVER_SOURCES", "1") != "0"
+DISCOVER_MAX_REPOS = _env_int("DISCOVER_MAX_REPOS", 8)
+BRAND = "Xfinder"

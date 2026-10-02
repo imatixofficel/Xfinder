@@ -1,0 +1,72 @@
+name: Xfinder Donations
+
+on:
+  issues:
+    types: [opened]
+  schedule:
+    - cron: "17 * * * *"     # پاکسازی ساعتی اهدای‌های منقضی (بیش از ۲۴ ساعت)
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: xfinder-donations
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    if: github.event_name == 'issues' && contains(github.event.issue.labels.*.name, 'donation')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Save donation
+        id: don
+        env:
+          # متن Issue غیرمطمئن است: فقط از طریق env به پایتون می‌رود و هرگز در shell اجرا نمی‌شود.
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_USER: ${{ github.event.issue.user.login }}
+        run: python -m src.donations ingest
+      - name: Commit donation
+        if: steps.don.outputs.ok == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add donations
+          git commit -m "donation: #${{ github.event.issue.number }}" || exit 0
+          git pull --rebase --autostash origin ${{ github.event.repository.default_branch }}
+          git push
+      - name: Reply and close
+        env:
+          GH_TOKEN: ${{ github.token }}
+          MSG: ${{ steps.don.outputs.message }}
+        run: |
+          gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "$MSG"
+          gh issue close ${{ github.event.issue.number }} --repo ${{ github.repository }}
+
+  cleanup:
+    if: github.event_name != 'issues'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Delete expired donations
+        run: python -m src.donations cleanup
+      - name: Commit removal
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A donations
+          git diff --cached --quiet && exit 0
+          git commit -m "donation: remove expired (24h)"
+          git pull --rebase --autostash origin ${{ github.event.repository.default_branch }}
+          git push
