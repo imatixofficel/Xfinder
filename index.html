@@ -45,13 +45,13 @@
     <main class="main">
       <header class="topbar">
         <button class="hamburger" id="hamburger" aria-label="menu">☰</button>
-        <div>
-          <h1 id="pageTitle">داشبورد</h1>
-          <p><span data-i18n="last_update">آخرین آپدیت</span>: <span id="updatedAt">—</span></p>
-        </div>
+        <div class="top-brand-mini"><span class="mini-x">X</span><span>Xfinder</span></div>
+        <div class="top-search"><span>⌕</span><input id="globalSearch" placeholder="جستجو در Xfinder..." aria-label="جستجو"></div>
+        <div class="quick-links"><span class="quick-active">⌂ داشبورد</span><span>Nodes</span><span>Monitor</span><span>Community</span></div>
         <div class="top-actions">
           <button class="icon-btn" id="themeToggle" title="Dark/Light">◐</button>
           <button class="lang-btn" id="langToggle">🇮🇷 فارسی</button>
+          <span class="online-user">● LIVE</span>
         </div>
       </header>
 
@@ -86,7 +86,8 @@
 
       <section id="configs" class="section">
         <div class="section-head">
-          <div><h2 data-i18n="configs">کانفیگ‌ها</h2><p>فقط کانفیگ‌های عبورکرده از اعتبارسنجی نمایش داده می‌شوند.</p></div>
+          <div><h2 data-i18n="configs">کانفیگ‌ها</h2><p>فقط کانفیگ‌هایی که Backend تأیید کرده در این جدول قرار می‌گیرند.</p></div>
+          <div class="data-badge" id="dataStatus">در انتظار داده</div>
         </div>
         <div class="toolbar">
           <input id="searchInput" type="search" placeholder="جستجو در سرور، کشور یا کانفیگ...">

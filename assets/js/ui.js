@@ -29,7 +29,8 @@ function renderTable(){
     <td>${esc(x.country_flag||"")} ${esc(x.country||"—")}</td>
     <td class="good">${esc(x.trust_score??"—")}</td>
     <td><div class="action"><button onclick="copyConfig(${i})">⧉</button><button onclick="showQR(${i})">QR</button></div></td>
-  </tr>`).join(""):`<tr><td colspan="7" style="text-align:center;padding:35px;color:var(--muted)">کانفیگی برای نمایش وجود ندارد.</td></tr>`;
+  </tr>`).join(""):`<tr><td colspan="7" class="empty-state"><strong>${API.error?"اتصال به فایل داده برقرار نشد":"هنوز کانفیگ سالمی منتشر نشده است"}</strong><span>${API.error?"فایل data/configs.json را در مخزن بررسی کنید و GitHub Actions را یک‌بار دستی اجرا کنید.":"پس از اجرای Workflow و تأیید TCP/HTTP، کانفیگ‌ها خودکار اینجا ظاهر می‌شوند."}</span></td></tr>`;
+  const st=$("#dataStatus");if(st)st.textContent=API.data?.configs?.length?`${API.data.configs.length} Node`:(API.error?"خطای داده":"در انتظار اجرای Collector");
 }
 window.copyConfig=async i=>{const x=filteredConfigs()[i];if(!x)return;try{await navigator.clipboard.writeText(x.config);toast(translations[currentLang].copied)}catch{toast("Copy failed")}};
 window.showQR=i=>{const x=filteredConfigs()[i];if(!x)return;const c=$("#qrCanvas"),ctx=c.getContext("2d");ctx.fillStyle="#fff";ctx.fillRect(0,0,260,260);ctx.fillStyle="#111";let seed=0;for(const ch of x.config)seed=(seed*31+ch.charCodeAt(0))%1000003;for(let y=0;y<29;y++)for(let z=0;z<29;z++){seed=(seed*1664525+1013904223)>>>0;if(seed%3===0)ctx.fillRect(10+z*8,10+y*8,7,7)}$("#qrModal").classList.add("show")};
@@ -45,4 +46,4 @@ function renderSources(){
   $("#sourceGrid").innerHTML=sources.map(s=>`<article class="source-card"><div><h4>${esc(s[0])}</h4><p>${esc(s[1])}</p></div><div class="trust">${s[2]}</div></article>`).join("");
 }
 function renderLargeStats(d){$("#statsLarge").innerHTML=[["Total",d.stats.total],["Alive",d.stats.alive],["Remixed",d.stats.remixed],["Average TCP/HTTP",d.stats.avg_ping+" ms"],["Active Sources",d.sources.active],["Removed Sources",d.sources.dead_removed]].map(x=>`<div><span>${x[0]}</span><strong>${esc(x[1])}</strong></div>`).join("")}
-function renderAll(){const d=API.data;renderStats(d);renderChart(d);renderProtocols(d);renderTable();renderSources();renderLargeStats(d)}
+function renderAll(){const d=API.data||{stats:{},sources:{},configs:[]};renderStats(d);renderChart(d);renderProtocols(d);renderTable();renderSources();renderLargeStats(d)}

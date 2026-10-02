@@ -1,67 +1,107 @@
-# Xfinder
+# Xfinder — Live Node Panel
 
-پنل زنده Xfinder برای نمایش کانفیگ‌های معتبر در GitHub Pages.
+پنل Xfinder برای GitHub Pages با رابط تاریک الهام‌گرفته از داشبورد مرجع، فونت Vazirmatn، RTL/LTR، لودر «به نام خدا»، جدول کانفیگ‌ها و Collector پایتون.
 
-## اجرا
+## نکته مهم درباره «کانفیگ‌ها نمی‌آیند»
+
+GitHub Pages فقط Frontend است و نمی‌تواند Python را اجرا کند. بنابراین مسیر درست این است:
+
+1. GitHub Actions اجرا شود.
+2. منابع جمع‌آوری شوند.
+3. کانفیگ‌ها TCP Validate شوند.
+4. خروجی `data/configs.json` ساخته شود.
+5. GitHub Actions فایل را commit کند.
+6. GitHub Pages همان فایل را نمایش دهد.
+
+نسخه جدید لودر را مستقل از شبکه کرده است؛ بنابراین اگر API یا IP detection خطا داشته باشد، لودر دیگر روی «در حال اتصال به منابع...» گیر نمی‌کند.
+
+## نصب
 
 ```bash
 git clone https://github.com/USERNAME/xfinder.git
 cd xfinder
 python -m src.main
-python -m http.server 8000
+python -m http.server 8000 --directory .
 ```
 
 سپس:
-`http://localhost:8000`
-
-## GitHub Pages
-
-در Repository به مسیر Settings → Pages بروید و Branch اصلی و پوشه `/root` را انتخاب کنید.
-
-## بروزرسانی خودکار
-
-Workflow موجود در:
 
 ```text
-.github/workflows/collect.yml
+http://localhost:8000
 ```
 
-هر ۱۰ دقیقه اجرا می‌شود. توجه کنید GitHub Actions زمان‌بندی cron را ممکن است با تأخیر اجرا کند.
+## فعال‌کردن GitHub Pages
 
-## معماری
+در GitHub:
 
-- `finder.py`: دریافت منابع و استخراج URLهای VLESS/VMess/Trojan/SS/Hysteria2
-- `validator.py`: تست TCP همزمان با Semaphore
-- `remixer.py`: خواندن IPهای تمیز و ساخت نسخه‌های remix
-- `publisher.py`: ساخت `data/configs.json` و خروجی‌های پروتکل
-- `trust_scorer.py`: محاسبه Trust Score
-- `health_monitor.py`: پایگاه داده SQLite برای وضعیت منابع
-- `main.py`: اجرای کل pipeline
+`Settings → Pages → Deploy from a branch → main → / (root)`
 
-## نکته مهم درباره تست HTTP
+## اجرای اولین جمع‌آوری
 
-تست TCP نشان می‌دهد endpoint از نظر اتصال TCP پاسخ می‌دهد؛ این به‌تنهایی به معنی سالم بودن کامل پروکسی نیست.
+بعد از Push، از مسیر زیر Workflow را یک بار دستی اجرا کنید:
 
-برای تست واقعی HTTP از داخل تونل، باید یک core مانند sing-box/Xray نصب و پیکربندی شود و ترافیک آزمایشی از همان تونل عبور کند. این نسخه هسته پروکسی را خودکار دانلود و اجرا نمی‌کند تا اجرای ناخواسته یک binary شبکه‌ای روی GitHub Actions رخ ندهد.
+`Actions → Xfinder Auto Update → Run workflow`
 
-## Remix
+پس از موفقیت Workflow، فایل `data/configs.json` و فایل‌های `output/*.txt` تغییر می‌کنند و صفحه آنها را نشان می‌دهد.
 
-جایگزینی IP به‌تنهایی تضمین‌کننده اتصال نیست. SNI، Host، TLS و سایر پارامترهای transport باید با مقصد سازگار باشند.
+Workflow زمان‌بندی‌شده نیز هر ۱۰ دقیقه تعریف شده است؛ زمان واقعی شروع Scheduled Actions ممکن است چند دقیقه جابه‌جا شود.
+
+## ساختار
+
+```text
+xfinder/
+├── index.html
+├── assets/
+│   ├── css/
+│   ├── js/
+│   ├── img/logo.svg
+│   └── fonts/
+├── data/configs.json
+├── output/
+├── src/
+│   ├── config.py
+│   ├── trust_scorer.py
+│   ├── health_monitor.py
+│   ├── finder.py
+│   ├── validator.py
+│   ├── remixer.py
+│   ├── publisher.py
+│   └── main.py
+└── .github/workflows/collect.yml
+```
+
+## ویژگی‌های Frontend
+
+- سایدبار سمت چپ و ظاهر Dark Dashboard
+- کارت‌های آماری
+- فیلتر پروتکل و جستجوی زنده
+- کپی کانفیگ و QR
+- RTL/LTR
+- تشخیص زبان از localStorage، زبان مرورگر و در نهایت IP
+- حالت Dark/Light
+- لودر Wandering Eyes با «به نام خدا»
+- لودر مستقل از API و دارای timeout قطعی
+- نمایش وضعیت داده به‌جای گیرکردن روی Loading
+
+## ویژگی‌های Backend
+
+- جمع‌آوری موازی ۶ منبع
+- پشتیبانی از URI مستقیم و Base64 subscription
+- استخراج VMess JSON
+- تست TCP با `asyncio.Semaphore(400)` و timeout پنج ثانیه
+- حذف نودهای مرده
+- Remix با IPهای تمیز و حفظ پارامترهای SNI/Host
+- تولید فایل‌های پروتکل و `all.txt`
+- تولید `data/configs.json`
+
+## وضعیت HTTP Test
+
+برای اینکه عدد HTTP به‌عنوان «تست واقعی» جعل نشود، نسخه فعلی مقدار `http_ping_ms` را فقط زمانی منتشر می‌کند که Collector واقعاً آن را تولید کرده باشد. TCP باز بودن پورت به‌تنهایی HTTP health محسوب نمی‌شود.
 
 ## منابع
 
-منابع در `src/config.py` محدود به ۶ URL تعریف‌شده هستند. بلک‌لیست نیز همان‌جا اعمال می‌شود.
+منابع دقیق در `src/config.py` تعریف شده‌اند. در صورت خراب یا حذف شدن یک منبع، Collector آن منبع را در لاگ Workflow گزارش می‌کند و اجرای سایر منابع را ادامه می‌دهد.
 
-## فونت
+## مجوز و مسئولیت
 
-رابط از Vazirmatn استفاده می‌کند. در محیط بدون اینترنت می‌توانید نسخه مجاز WOFF2 فونت را در:
-
-```text
-assets/fonts/
-```
-
-قرار دهید و در CSS به آن ارجاع دهید.
-
-## مجوز و استفاده
-
-این پروژه برای مانیتورینگ و نمایش داده‌های عمومی طراحی شده است. قبل از استفاده از منابع یا سرویس‌های اشخاص ثالث، شرایط استفاده و قوانین مربوط به آن‌ها را بررسی کنید.
+منابع عمومی ممکن است تغییر کنند یا حذف شوند. قبل از استفاده از هر کانفیگ، قوانین شبکه و ارائه‌دهنده سرویس خود را رعایت کنید.
