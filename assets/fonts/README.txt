@@ -1,1 +1,2 @@
-Vazirmatn is loaded from Google Fonts. Place a licensed Vazirmatn.woff2 here for offline use.
+فونت اصلی رابط Vazirmatn است و در CSS از Google Fonts بارگذاری می‌شود.
+برای حالت کاملاً آفلاین می‌توانید فایل‌های Vazirmatn WOFF2 را در همین پوشه قرار داده و @font-face را فعال کنید.

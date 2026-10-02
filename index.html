@@ -9,14 +9,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script>try{if(localStorage.getItem("xfinder_theme")==="light")document.documentElement.classList.add("prelight")}catch(e){}</script>
   <link rel="stylesheet" href="assets/css/style.css">
   <link rel="stylesheet" href="assets/css/sidebar.css">
   <link rel="stylesheet" href="assets/css/loader.css">
   <link rel="stylesheet" href="assets/css/responsive.css">
 </head>
 <body>
-  <div id="loader" class="loader-screen">
-    <div class="loader-brand">X</div>
+  <div id="loader" class="loader-screen" aria-live="polite">
+    <div class="loader-brand-wrap">
+      <img class="loader-logo" src="assets/img/logo.svg" alt="Xfinder">
+    </div>
     <div class="god-text" data-i18n="god_text">به نام خدا</div>
     <div class="wandering-eyes" aria-hidden="true">
       <span class="eye"><i></i></span><span class="eye"><i></i></span>
@@ -24,6 +27,7 @@
     <div class="scan-line"></div>
     <div class="load-message" id="loadMessage">در حال اتصال به منابع...</div>
     <div class="load-percent" id="loadPercent">0%</div>
+    <div class="load-track"><i id="loadBar"></i></div>
   </div>
 
   <div class="app-shell">
