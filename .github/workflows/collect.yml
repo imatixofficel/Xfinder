@@ -14,17 +14,15 @@ concurrency:
   group: xfinder-pages
   cancel-in-progress: true
 
-env:
-  PYTHONUNBUFFERED: "1"
-  XRAY_CONCURRENCY: "24"
-  XRAY_PROBE_TIMEOUT: "10"
-
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 25
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Checkout source only
+      - name: Checkout source
         uses: actions/checkout@v4
 
       - name: Setup Python
@@ -33,46 +31,44 @@ jobs:
           python-version: "3.11"
           cache: "pip"
 
-      - name: Install tools
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq curl unzip ca-certificates
+      - name: Install system tools
+        run: sudo apt-get update && sudo apt-get install -y curl unzip ca-certificates
 
-      - name: Install latest Xray-core
+      - name: Install Xray-core
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p .tools
-          python - <<'PY'
-          import json, urllib.request
-          api='https://api.github.com/repos/XTLS/Xray-core/releases/latest'
-          req=urllib.request.Request(api,headers={'Accept':'application/vnd.github+json','User-Agent':'Xfinder'})
-          rel=json.load(urllib.request.urlopen(req,timeout=20))
-          assets=rel.get('assets',[])
-          asset=next((a for a in assets if a['name']=='Xray-linux-64.zip'),None)
-          if not asset: raise SystemExit('Xray-linux-64.zip not found')
-          print(asset['browser_download_url'])
-          urllib.request.urlretrieve(asset['browser_download_url'],'.tools/xray.zip')
-          PY
-          unzip -oq .tools/xray.zip -d .tools/xray
-          chmod +x .tools/xray/xray
-          echo "XRAY_BIN=$GITHUB_WORKSPACE/.tools/xray/xray" >> "$GITHUB_ENV"
+          curl -fsSL --retry 4 --retry-delay 2 \
+            -o /tmp/xray.zip \
+            https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip
+          rm -rf /tmp/xray && mkdir -p /tmp/xray
+          unzip -q /tmp/xray.zip -d /tmp/xray
+          install -m 0755 /tmp/xray/xray "$RUNNER_TEMP/xray"
+          "$RUNNER_TEMP/xray" version
 
-      - name: Install Python package set
+      - name: Install Python requirements
         run: pip install -r requirements.txt
 
-      - name: Collect → TCP → Xray → Clean-IP scan → Remix → Xray
+      - name: Run collector, scanner, remix and real Xray validation
+        env:
+          XRAY_BIN: ${{ runner.temp }}/xray
+          XRAY_CONCURRENCY: "16"
+          XRAY_PROBE_TIMEOUT: "7"
         run: python -m src.main
 
-      - name: Build GitHub Pages artifact
+      - name: Build clean Pages artifact
+        shell: bash
         run: |
           set -euo pipefail
           rm -rf _site
-          mkdir -p _site
+          mkdir -p _site/assets _site/data _site/output
           cp index.html _site/
-          cp -R assets _site/assets
-          cp -R data _site/data
-          cp -R output _site/output
-          test -s _site/data/configs.json
-          test -s _site/output/all.txt || true
+          cp -R assets/* _site/assets/
+          cp -R data/* _site/data/
+          cp -R output/* _site/output/
+          touch _site/.nojekyll
+          # Never deploy source control metadata or local caches.
+          rm -rf _site/data/warp_accounts.json
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -82,18 +78,6 @@ jobs:
         with:
           path: _site
 
-      - name: Deploy Pages
+      - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
-      - name: Summary
-        run: |
-          python - <<'PY'
-          import json
-          d=json.load(open('data/configs.json',encoding='utf-8'))
-          s=d.get('stats',{})
-          print('verified:',s.get('verified',0))
-          print('remixed:',s.get('remixed',0))
-          print('clean_ips:',s.get('clean_ips',0))
-          print('updated_at:',d.get('updated_at'))
-          PY

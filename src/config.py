@@ -8,18 +8,9 @@ DB_PATH = ROOT / "sources.db"
 CONCURRENCY = 400
 TCP_TIMEOUT = 5.0
 HTTP_TIMEOUT = 8.0
-IP_SCAN_CONCURRENCY = 200
-IP_SCAN_TIMEOUT = 1.8
-IP_SCAN_LIMIT = 1200
-IP_SCAN_PORT_LIMIT = 8
-XRAY_CANDIDATE_LIMIT = 1500
-XRAY_CONCURRENCY = 24
-XRAY_PROBE_TIMEOUT = 10.0
 MIN_TRUST = 60
 MAX_REMIX_PING = 70
 REMIX_PER_CONFIG = 3
-
-# فقط IPهای ارائه‌شده توسط اسکنر Clean IP بررسی می‌شوند؛ CIDR/اسکن اینترنتی انجام نمی‌شود.
 
 SOURCES = [
     {"name":"Au1rxx/free-vpn-subscriptions","url":"https://github.com/Au1rxx/free-vpn-subscriptions/raw/main/output/v2ray-base64.txt","trust":100,"has_http_test":True},

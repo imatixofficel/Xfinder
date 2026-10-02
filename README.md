@@ -1,74 +1,99 @@
-# Xfinder — نسخه اصلاح‌شده
+# Xfinder — نسخه کامل و اصلاح‌شده
 
-Xfinder یک collector و وب‌سایت است که کانفیگ‌های عمومی را جمع‌آوری می‌کند، ابتدا endpoint آن‌ها را بررسی می‌کند، سپس **خود پروتکل را با Xray-core از طریق یک درخواست HTTPS واقعی** تست می‌کند و فقط موارد تأییدشده را منتشر می‌کند.
-
-## Pipeline
+Xfinder یک Collector خودکار برای کانفیگ‌های عمومی VLESS / VMess / Trojan / Shadowsocks / Hysteria2 است.
+Pipeline هر ۱۰ دقیقه اجرا می‌شود و ترتیب آن این است:
 
 ```text
-Public sources
+Collect sources
    ↓
-Normalize / deduplicate
+TCP pre-check
    ↓
-TCP reachability
+Real Xray config test
    ↓
-Xray protocol + HTTPS canary
+Real HTTPS request through Xray SOCKS
    ↓
-Verified base configs
+Clean-IP source (Scanner-matix)
    ↓
-Clean-IP source
+Independent TCP scan of candidate IPs/ports
    ↓
-TCP scan فقط روی IPهای همان منبع و پورت‌های موردنیاز
+Remix config + clean IP
    ↓
-IP + config remix
+Real Xray + HTTPS test again
    ↓
-Xray protocol + HTTPS canary دوباره
-   ↓
-Verified output
+Publish only verified proxy configs
    ↓
 GitHub Pages
 ```
 
-### نکته مهم درباره اسکن IP
-اسکنر **CIDR یا اینترنت تصادفی را اسکن نمی‌کند**. فقط IPهایی را که در `CLEAN_IPS_URL` آمده‌اند، روی تعداد محدودی از پورت‌هایی که در کانفیگ‌های تأییدشده استفاده شده‌اند بررسی می‌کند.
+## تفاوت مهم این نسخه
 
-## جلوگیری از Merge Conflict
+- فقط باز بودن TCP کافی نیست؛ کانفیگ باید توسط Xray پذیرفته شود و یک HTTPS request واقعی از تونل عبور کند.
+- IPهای Clean-IP از Scanner-matix دریافت می‌شوند، سپس Xfinder خودش IP/Portهای قابل‌دسترسی را دوباره TCP-check می‌کند.
+- Remix قبل از انتشار یک بار دیگر با Xray تست می‌شود.
+- فایل‌های تولیدی `data/` و `output/` دیگر توسط GitHub Actions به `main` commit نمی‌شوند؛ بنابراین اجرای خودکار نباید Merge Conflict ایجاد کند.
+- Artifact نهایی مستقیماً با GitHub Pages Deploy می‌شود.
+- کلید خصوصی WARP روی سرور ذخیره/منتشر نمی‌شود؛ بخش ساخت WireGuard اختصاصی در مرورگر باقی می‌ماند.
+- `sources.db` و خروجی‌های runtime هم generated هستند و در Git نگه‌داری نمی‌شوند.
 
-فایل‌های زیر generated هستند و دیگر توسط GitHub Actions commit نمی‌شوند:
+## نصب در GitHub
 
-- `data/configs.json`
-- `data/raw_configs.json`
-- `data/validated.json`
-- `data/remixed.json`
-- `data/scan.json`
-- `output/*.txt`
-- `sources.db`
-- `data/warp_accounts.json`
+1. محتویات این ZIP را داخل repository قرار بده.
+2. در **Settings → Pages → Build and deployment → Source**، گزینه **GitHub Actions** را انتخاب کن.
+3. از **Actions → Xfinder Auto Update → Run workflow** اولین اجرا را دستی شروع کن.
+4. بعد از موفقیت اولین اجرا، Workflow طبق schedule هر ۱۰ دقیقه اجرا می‌شود.
 
-Workflow به‌جای `git add → commit → push`، نتیجه را به‌عنوان **GitHub Pages artifact** منتشر می‌کند. بنابراین اجرای خودکار Xfinder باعث تغییر فایل‌های محلی GitHub Desktop و ایجاد Merge Conflict نمی‌شود.
+### اگر repository قبلی داری
 
-## راه‌اندازی GitHub Pages
+چون نسخه‌های قدیمی ممکن است `data/` و `output/` را قبلاً track کرده باشند، فقط یک بار در Git Bash این کار را انجام بده:
 
-1. Repository را روی GitHub قرار دهید.
-2. در **Settings → Pages**، Source را روی **GitHub Actions** قرار دهید.
-3. از **Actions → Xfinder Auto Update → Run workflow** یک بار دستی اجرا کنید.
-4. بعد از موفقیت اولین اجرا، سایت Pages منتشر می‌شود.
-5. سپس Workflow هر ۱۰ دقیقه اجرا می‌شود.
+```bash
+git rm -r --cached data output sources.db
 
-## تست واقعی
+git add .gitignore package.json .github src assets index.html README.md requirements.txt
 
-برای VLESS، VMess، Trojan و Shadowsocks، collector یک instance موقت Xray می‌سازد و از طریق SOCKS محلی یک HTTPS canary را درخواست می‌کند. بنابراین «باز بودن TCP» به‌تنهایی برای انتشار کافی نیست.
+git commit -m "chore: stop tracking generated Xfinder output"
+git push
+```
 
-کانفیگ‌های ناقص، URIهای خراب و transportهای ناشناخته منتشر نمی‌شوند.
+اگر یکی از مسیرها قبلاً وجود نداشت، Git پیام خطای مربوط به همان مسیر را می‌دهد؛ مسیر موجود را حذف کن و دوباره دستور را اجرا کن.
 
-## WireGuard
-
-ساخت خودکار WARP در backend منتشر نمی‌شود، چون یک GitHub Runner بدون فعال‌سازی تونل WireGuard نمی‌تواند آن را end-to-end مانند VLESS/Trojan تست کند. سازنده شخصی WARP در رابط سایت مستقل است و کلید خصوصی backend در repository ذخیره نمی‌شود.
+بعد از این commit، اجرای Collector دیگر `data/output` را به `main` push نمی‌کند.
 
 ## اجرای محلی
 
+نیازمندی‌ها:
+
+- Python 3.11+
+- Xray-core در PATH با نام `xray`
+- curl
+
 ```bash
-python -m compileall src
-XRAY_BIN=/path/to/xray python -m src.main
+pip install -r requirements.txt
+python -m unittest discover -s tests -v
+python -m src.main
 ```
 
-برای اجرای کامل محلی باید `xray` و `curl` نصب باشند.
+برای کنترل تست Xray:
+
+```bash
+XRAY_CONCURRENCY=16 XRAY_PROBE_TIMEOUT=7 python -m src.main
+```
+
+## خروجی سایت
+
+Workflow خروجی را در Artifact مربوط به GitHub Pages قرار می‌دهد:
+
+- `output/all.txt`
+- `output/vless.txt`
+- `output/vmess.txt`
+- `output/trojan.txt`
+- `output/ss.txt`
+- `output/hysteria2.txt`
+- `output/wireguard.txt`
+- `data/configs.json`
+
+این فایل‌ها **generated** هستند و نباید دستی در Git تغییر داده شوند.
+
+## نکته درباره کانفیگ‌های عمومی
+
+Xfinder فقط کانفیگ‌های عمومی منابع تعریف‌شده را جمع‌آوری و تست می‌کند. وضعیت سرورهای عمومی دائماً تغییر می‌کند؛ بنابراین «سالم» بودن یعنی در زمان آخرین اجرای Workflow تست واقعی موفق بوده است، نه تضمین دائمی اتصال.

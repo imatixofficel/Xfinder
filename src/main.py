@@ -3,46 +3,59 @@ from pathlib import Path
 from .health_monitor import init_db
 from .finder import collect, SOURCE_STATS
 from .validator import validate
-from .remixer import build_with
-from .ip_scanner import fetch_candidates, scan
+from .xray_probe import validate_xray
+from .remixer import fetch_clean_async, build_with
+
 from .publisher import publish
-from .validator import endpoint
-from .config import IP_SCAN_PORT_LIMIT
+
+
+def xray_binary():
+    # GitHub Actions sets XRAY_BIN; local runs can put xray in PATH.
+    import os
+    return os.getenv("XRAY_BIN", "xray")
+
+
+async def _real_validate(items, label):
+    tcp_alive = [x for x in await validate(items) if x.get("alive")]
+    if not tcp_alive:
+        print(f"{label}: 0 passed TCP")
+        return []
+    tested = await validate_xray(tcp_alive, xray_binary())
+    good = [x for x in tested if x.get("xray_alive")]
+    for x in good:
+        x["alive"] = True
+    print(f"{label}: {len(tcp_alive)} passed TCP, {len(good)} passed real Xray probe")
+    return good
+
 
 async def run():
-    init_db(); Path("data").mkdir(exist_ok=True); Path("output").mkdir(exist_ok=True)
+    init_db()
+    Path("data").mkdir(exist_ok=True)
+
+    # 1) Collect -> TCP pre-filter -> real Xray/HTTPS probe.
     raw = await collect()
-    # مرحله ۱: هر کانفیگ ابتدا TCP و سپس با Xray از طریق HTTPS واقعی تست می‌شود.
-    validated = await validate(raw, xray=True)
+    validated = await _real_validate(raw, "base")
     for x in validated:
         x["protocol"] = x["config"].split("://", 1)[0].lower()
-    validated.sort(key=lambda x: x.get("http_ping_ms") or x.get("tcp_ping_ms") or 999999)
+    validated.sort(key=lambda x: x.get("http_ping_ms") or x.get("tcp_ping_ms") or 9999)
 
-    # مرحله ۲: فقط IPهایی که منبع Clean-IP ارائه کرده را اسکن می‌کنیم.
-    # هیچ CIDR یا رنج تصادفی اسکن نمی‌شود.
-    try:
-        candidates = fetch_candidates()
-        ports=[]
-        for x in validated:
-            try: ports.append(endpoint(x["config"])[1])
-            except Exception: pass
-        ports = sorted(set([p for p in ports if 1 <= p <= 65535]))[:IP_SCAN_PORT_LIMIT]
-        if not ports: ports=[443,80]
-        clean = await scan(candidates, ports)
-    except Exception as e:
-        print("clean IP scan failed:",e); clean=[]
-
-    # مرحله ۳: ترکیب IP سالم با کانفیگ و تست مجدد خود Remix با Xray.
+    # 2) Clean-IP scanner results -> remix -> real Xray probe again.
+    clean = await fetch_clean_async()
     _, remixed_candidates = build_with(validated, clean)
-    remixed = [x for x in await validate(remixed_candidates, xray=True)]
+    remixed = await _real_validate(remixed_candidates, "remix")
     for x in remixed:
-        x["protocol"] = x["config"].split("://", 1)[0].lower(); x["is_remixed"] = True
-    remixed.sort(key=lambda x: x.get("http_ping_ms") or x.get("tcp_ping_ms") or 999999)
+        x["protocol"] = x["config"].split("://", 1)[0].lower()
+        x["is_remixed"] = True
+    remixed.sort(key=lambda x: x.get("http_ping_ms") or x.get("tcp_ping_ms") or 9999)
 
-    # WireGuard خودکار در این نسخه منتشر نمی‌شود چون runner بدون فعال‌سازی تونل
-    # نمی‌تواند آن را end-to-end تست کند. سازنده WARP داخل سایت مستقل باقی می‌ماند.
-    wg=[]
-    publish(validated, remixed, wg, list(SOURCE_STATS), len(raw), clean_ips=clean)
-    print(f"Xfinder complete: {len(validated)} verified, {len(remixed)} verified remixed, {len(clean)} clean IPs")
+    # Automatic WARP generation is intentionally not published: a generated
+    # WireGuard private key is a credential. The browser-side generator remains
+    # available in the site for personal configs.
+    wg = []
 
-if __name__ == "__main__": asyncio.run(run())
+    publish(validated, remixed, wg, list(SOURCE_STATS), len(raw))
+    print(f"Xfinder complete: {len(validated)} real-tested, {len(remixed)} real-tested remix, WG auto-publish disabled")
+
+
+if __name__ == "__main__":
+    asyncio.run(run())

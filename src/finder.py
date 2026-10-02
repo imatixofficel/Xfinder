@@ -3,7 +3,7 @@ import asyncio, base64, json, re
 from urllib.request import Request, urlopen
 from .config import SOURCES, BLACKLIST
 
-URI_PATTERN=re.compile(r"(?i)(?:vless|vmess|trojan|ss|hysteria2)://[^\s\"'<>]+")
+URI_PATTERN=re.compile(r"(?i)(?:vless|vmess|trojan|ss|hysteria2)://[^\s\"'<>\\]+")
 
 def fetch(url, timeout=20):
     req=Request(url,headers={"User-Agent":"Xfinder/1.1 (+GitHub Actions)"})
@@ -56,17 +56,7 @@ def extract(text):
         except Exception:pass
     cleaned=[]
     for u in found:
-        u=u.strip().rstrip(".,;)]}")
-        # Some feeds append an incomplete JSON/object after a URI. Never publish it.
-        if "{" in u or "\n" in u or "\r" in u: u=u.split("{",1)[0].rstrip("?,&")
-        try:
-            from urllib.parse import urlparse
-            q=urlparse(u)
-            if q.scheme.lower() not in {"vless","vmess","trojan","ss","hysteria2"} or not q.netloc and q.scheme.lower()!="vmess":
-                continue
-        except Exception:
-            continue
-        if len(u)>8192: continue
+        u=u.rstrip(".,;)]}")
         if u not in cleaned:cleaned.append(u)
     return cleaned
 
