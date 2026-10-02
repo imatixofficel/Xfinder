@@ -3,7 +3,7 @@ import asyncio, base64, json, re
 from urllib.request import Request, urlopen
 from .config import SOURCES, BLACKLIST
 
-URI_PATTERN=re.compile(r"(?i)(?:vless|vmess|trojan|ss|hysteria2)://[^\s\"'<>\\]+")
+URI_PATTERN=re.compile(r"(?i)(?:vless|vmess|trojan|ss|hysteria2)://[^\s\"'<>]+")
 
 def fetch(url, timeout=20):
     req=Request(url,headers={"User-Agent":"Xfinder/1.1 (+GitHub Actions)"})
@@ -56,19 +56,34 @@ def extract(text):
         except Exception:pass
     cleaned=[]
     for u in found:
-        u=u.rstrip(".,;)]}")
+        u=u.strip().rstrip(".,;)]}")
+        # Some feeds append an incomplete JSON/object after a URI. Never publish it.
+        if "{" in u or "\n" in u or "\r" in u: u=u.split("{",1)[0].rstrip("?,&")
+        try:
+            from urllib.parse import urlparse
+            q=urlparse(u)
+            if q.scheme.lower() not in {"vless","vmess","trojan","ss","hysteria2"} or not q.netloc and q.scheme.lower()!="vmess":
+                continue
+        except Exception:
+            continue
+        if len(u)>8192: continue
         if u not in cleaned:cleaned.append(u)
     return cleaned
 
+SOURCE_STATS=[]
+
 async def collect():
-    loop=asyncio.get_running_loop();out=[]
+    loop=asyncio.get_running_loop();out=[];SOURCE_STATS.clear()
     async def one(src):
         if any(b.lower() in src["name"].lower() for b in BLACKLIST):return []
         try:
             text=await loop.run_in_executor(None,fetch,src["url"])
-            return [{"config":cfg,"source":src["name"],"trust_score":src["trust"]} for cfg in extract(text)]
+            items=[{"config":cfg,"source":src["name"],"trust_score":src["trust"]} for cfg in extract(text)]
+            SOURCE_STATS.append({"name":src["name"],"trust":src["trust"],"count":len(items),"ok":bool(items)})
+            return items
         except Exception as e:
-            print("source failed:",src["name"],e);return []
+            print("source failed:",src["name"],e)
+            SOURCE_STATS.append({"name":src["name"],"trust":src["trust"],"count":0,"ok":False});return []
     batches=await asyncio.gather(*(one(s) for s in SOURCES))
     for batch in batches:out.extend(batch)
     return out
