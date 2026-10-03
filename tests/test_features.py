@@ -96,3 +96,14 @@ class DirectDonation(unittest.TestCase):
         d = donations.load_active()[0]
         self.assertEqual(len(d["configs"]), 2); self.assertNotIn("<", d["ad"]); self.assertEqual(d["user"], "web-ab12x")
         self.assertFalse(donations.ingest_json("not json", 1)[0])
+
+
+class WarpDefaults(unittest.TestCase):
+    def test_gfp_style_uri_gets_warp_defaults(self):
+        from src import wg_sources as w
+        priv = "oApA+WWuzVzPHXI7I82rGrJT2r5ZKoZ1GJbcTsDG6mc="
+        d = w.parse_uri(f"wireguard://{priv}@162.159.192.1:2408")
+        self.assertEqual((d["public_key"], d["address"]), (w.WARP_PUB, ["172.16.0.2"]))
+        full = w.to_uri(d); self.assertEqual(w.parse_uri(full)["private_key"], priv)
+        with self.assertRaises(ValueError):                       # endpoint غیر کلودفلر: بدون کلید peer معتبر نیست
+            w.parse_uri(f"wireguard://{priv}@103.107.198.228:80")

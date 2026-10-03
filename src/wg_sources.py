@@ -1,7 +1,25 @@
 """WireGuard از منابع عمومی: پارس wireguard:// و فایل‌های .conf، ساخت outbound واقعی برای Xray.
 WireGuard روی UDP است؛ بنابراین تست TCP ندارد و مستقیم با Xray (+ درخواست HTTPS واقعی) تست می‌شود."""
-import base64, re
+import base64, ipaddress, re
 from urllib.parse import quote, unquote, parse_qs
+
+
+# Cloudflare WARP: کلید عمومی peer ثابت است و آدرس IPv4 تونل برای حساب‌های رایگان 172.16.0.2 است.
+# بعضی منابع (مثل gfpcom/free-proxy-list) فقط «کلید خصوصی@endpoint» می‌دهند؛ برای endpointهای WARP کلودفلر
+# مقدارهای پیش‌فرض را پر می‌کنیم. اگر درست نبود، تست واقعی Xray همان کانفیگ را حذف می‌کند.
+WARP_PUB = "bmXOC+F1FxEMF9dyiK2H5/1SUtzH0JuVo51h2wPfgyo="
+WARP_V4 = "172.16.0.2"
+_WARP_NETS = [ipaddress.ip_network(n) for n in ("162.159.192.0/22", "188.114.96.0/22", "2606:4700:d0::/48", "2606:4700:d1::/48")]
+
+
+def _is_warp_endpoint(host):
+    if host.lower() == "engage.cloudflareclient.com":
+        return True
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return any(ip in n for n in _WARP_NETS if n.version == ip.version)
 
 
 def _key_ok(k):
@@ -64,6 +82,9 @@ def parse_uri(uri):
     d = {"private_key": unquote(priv).replace(" ", "+"), "public_key": _first(q, "publickey", "public_key", "peer_public_key", "pbk").replace(" ", "+"),
          "psk": _first(q, "presharedkey", "psk", "pre_shared_key").replace(" ", "+"), "host": host, "port": port,
          "address": addrs, "mtu": min(max(mtu, 576), 1500), "reserved": reserved}
+    if _is_warp_endpoint(host):
+        d["public_key"] = d["public_key"] or WARP_PUB
+        d["address"] = d["address"] or [WARP_V4]
     return _norm(d)
 
 

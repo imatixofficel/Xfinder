@@ -1,9 +1,25 @@
 name: Xfinder Auto Update
 
+run-name: "Xfinder update (${{ github.event_name }})"
+
 on:
+  # پشتیبان: زمان‌بندی خود GitHub (گاهی دیر اجرا می‌شود)
   schedule:
     - cron: "*/10 * * * *"
+  # فراخوانی از بیرون (cron-job.org و ...) با API — ساده‌ترین روش:
+  #   POST https://api.github.com/repos/imatixofficel/Xfinder/dispatches
+  #   body: {"event_type":"xfinder-run"}
+  repository_dispatch:
+    types: [xfinder-run, run, update]
+  # فراخوانی از بیرون با API — روش دوم (ref لازم است):
+  #   POST https://api.github.com/repos/imatixofficel/Xfinder/actions/workflows/collect.yml/dispatches
+  #   body: {"ref":"main"}
   workflow_dispatch:
+    inputs:
+      budget:
+        description: "بودجه‌ی زمانی پایپ‌لاین (ثانیه)"
+        required: false
+        default: "520"
 
 permissions:
   contents: read
@@ -61,7 +77,10 @@ jobs:
           XRAY_PARALLEL: "4"
           XRAY_BATCH_SIZE: "32"
           XRAY_PROBE_TIMEOUT: "5"
-          PIPELINE_BUDGET: "520"
+          # منابع WireGuard (چند URL با ویرگول). منبع زنده بود (فرمت wireguard://کلید@IP:پورت)؛ هر خط با Xray واقعی تست می‌شود.
+          WG_SOURCE_URLS: "https://raw.githubusercontent.com/wiki/gfpcom/free-proxy-list/lists/wireguard.txt"
+          MAX_WG_CANDIDATES: "96"
+          PIPELINE_BUDGET: ${{ github.event.inputs.budget || '520' }}
         run: python -m src.main
 
       - name: Build clean Pages artifact

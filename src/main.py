@@ -59,7 +59,7 @@ async def _validate_wg(items, deadline):
             d = wg_sources.parse_uri(x["config"])
         except Exception:
             continue
-        x.update({"server": d["host"], "port": d["port"], "tcp_ping_ms": None})
+        x.update({"server": d["host"], "port": d["port"], "tcp_ping_ms": None, "config": wg_sources.to_uri(d, "WG")})
         cands.append(x)
     random.shuffle(cands)
     cands = limit_per_endpoint(cands)[:MAX_WG_CANDIDATES]
