@@ -22,6 +22,21 @@ def clean_ad(text):
     return text[:MAX_DONATION_AD]
 
 
+def clean_name(text, limit=40):
+    """نام/آیدی اهداکننده (ایموجی و @ مجاز؛ HTML و کاراکتر کنترلی حذف می‌شود)."""
+    t = CTRL.sub("", str(text or "")).replace("<", "").replace(">", "").replace("#", "").replace("\n", " ")
+    t = re.sub(r"\s+", " ", t).strip()
+    return "" if t.lower() in ("_no response_", "none", "-") else t[:limit]
+
+
+def extract_name(body):
+    for part in re.split(r"(?m)^###\s+", body or ""):
+        head, _, rest = part.partition("\n")
+        if head.strip().lower().startswith("name") or "نام" in head:
+            return clean_name(rest)
+    return ""
+
+
 def parse_issue(body):
     """بدنه‌ی Issue-form (### Heading) را به (configs, ad) تبدیل می‌کند."""
     parts = re.split(r"(?m)^###\s+", body or "")
@@ -95,7 +110,7 @@ def ingest(body, issue_no, user):
             return False, "شما همین الان یک اهدای فعال دارید؛ بعد از ۲۴ ساعت دوباره اهدا کنید."
     DONATIONS_DIR.mkdir(parents=True, exist_ok=True)
     now = _now()
-    rec = {"id": int(issue_no), "user": str(user)[:60], "created_at": now.isoformat(),
+    rec = {"id": int(issue_no), "user": str(user)[:60], "name": extract_name(body), "created_at": now.isoformat(),
            "expires_at": (now + timedelta(hours=DONATION_TTL_HOURS)).isoformat(),
            "ad": ad, "configs": configs}
     (DONATIONS_DIR / f"{now:%Y%m%dT%H%M%S}-{int(issue_no)}.json").write_text(
@@ -117,7 +132,8 @@ def ingest_json(payload_json, run_id):
         if u not in found:
             found.append(u)
     user = re.sub(r"[^A-Za-z0-9_-]", "", str(p.get("user", "web")))[:40] or "web"
-    return ingest("### Configs\n" + "\n".join(found[:MAX_DONATION_CONFIGS]) + "\n\n### Ad\n" + clean_ad(p.get("ad", "")),
+    return ingest("### Configs\n" + "\n".join(found[:MAX_DONATION_CONFIGS]) + "\n\n### Ad\n" + clean_ad(p.get("ad", ""))
+                  + "\n\n### Name\n" + clean_name(p.get("name", "")),
                   int(run_id or 0), "web-" + user)
 
 

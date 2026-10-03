@@ -57,9 +57,9 @@
   <main class="main">
     <div class="top">
       <button class="burger" id="burger" aria-label="menu"><svg class="i" data-ic="menu"></svg></button>
+      <button class="sq" id="lang" aria-label="language"><span class="latin" style="font-weight:700;font-size:12px">FA</span></button>
       <div class="crumb">Xfinder / <b id="crumb">Dashboard</b></div>
       <label class="search t"><svg class="i" data-ic="search"></svg><input id="gs" data-ip="search" placeholder="جستجو" aria-label="search"></label>
-      <button class="sq" id="lang" aria-label="language"><span class="latin" style="font-weight:700;font-size:12px">FA</span></button>
       <button class="pill" id="refresh"><svg class="i" data-ic="refresh"></svg><span data-i="refresh">بروزرسانی</span></button>
     </div>
 
@@ -112,6 +112,7 @@
       <div class="card donform">
         <h3 data-i="don_t">ثبت اهدای جدید</h3>
         <label class="fl"><span data-i="don_cfg">کانفیگ‌ها (حداکثر ۳ تا، هر کدام در یک خط)</span><textarea id="donCfg" rows="3" dir="ltr" placeholder="vless://… / vmess://… / trojan://… / ss://… / hysteria2://…"></textarea></label>
+        <label class="fl"><span data-i="don_name">نام یا آیدی تلگرام شما (اختیاری؛ کنار کانفیگ نمایش داده می‌شود)</span><input id="donName" maxlength="40" data-ip="don_name_ph" placeholder="@mychannel 🚀"></label>
         <label class="fl"><span data-i="don_ad">متن تبلیغاتی (اختیاری، حداکثر ۲۰۰ کاراکتر)</span><input id="donAd" maxlength="200" data-ip="don_ad_ph" placeholder="مثلاً: کانال تلگرام من @…"></label>
         <p class="m" data-i="don_note">ثبت از طریق یک Issue در GitHub انجام می‌شود (نیاز به حساب GitHub). فقط کانفیگ‌هایی که تست واقعی را پاس کنند نمایش داده می‌شوند.</p>
         <button class="pill" id="donSend"><span data-i="don_send">ارسال اهدا</span></button>

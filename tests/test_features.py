@@ -107,3 +107,35 @@ class WarpDefaults(unittest.TestCase):
         full = w.to_uri(d); self.assertEqual(w.parse_uri(full)["private_key"], priv)
         with self.assertRaises(ValueError):                       # endpoint غیر کلودفلر: بدون کلید peer معتبر نیست
             w.parse_uri(f"wireguard://{priv}@103.107.198.228:80")
+
+
+class DonorName(unittest.TestCase):
+    def setUp(self):
+        for f in DONATIONS_DIR.glob("*.json"): f.unlink()
+
+    def test_name_roundtrip_issue_and_api(self):
+        body = "### Configs\n\nvless://a@1.1.1.1:443#x\n\n### Ad\n\nhi\n\n### Name\n\n@my_channel 🚀 <b>x</b>"
+        self.assertEqual(donations.extract_name(body), "@my_channel 🚀 bx/b")
+        self.assertNotIn("<", donations.extract_name(body)); self.assertIn("🚀", donations.extract_name(body))
+        ok, _ = donations.ingest_json(json.dumps({"configs": ["vless://a@1.1.1.1:443"], "name": "@xf_chan # 🔥", "ad": ""}), 5)
+        self.assertTrue(ok); self.assertEqual(donations.load_active()[0]["name"], "@xf_chan 🔥")
+
+
+class WgRemixHelpers(unittest.TestCase):
+    def test_warp_ip_and_conf(self):
+        from src import wg_sources as w
+        self.assertTrue(w.is_warp_ip("162.159.192.7")); self.assertTrue(w.is_warp_ip("188.114.97.3"))
+        self.assertFalse(w.is_warp_ip("104.16.1.1")); self.assertFalse(w.is_warp_ip("example.com"))
+        priv = "oApA+WWuzVzPHXI7I82rGrJT2r5ZKoZ1GJbcTsDG6mc="
+        d = w.parse_uri(f"wireguard://{priv}@162.159.192.1:2408?reserved=239%2C203%2C185")
+        nd = w.with_endpoint(d, "188.114.96.1", 2408)
+        conf = w.conf_text(nd)
+        self.assertIn("Endpoint = 188.114.96.1:2408", conf); self.assertIn("[Interface]", conf); self.assertIn("Reserved = 239,203,185", conf)
+        self.assertEqual(w.parse_uri(w.to_uri(nd))["reserved"], [239, 203, 185])
+
+    def test_argh94_style_uri(self):
+        from src import wg_sources as w
+        u = ("wireguard://qDyWaZpek1GxtGsvuWI3k4iJwBUfhj1jjCAbUCpoUVM%3D@162.159.195.16:4500?address=172.16.0.2%2F32&reserved=239%2C203%2C185"
+             "&publickey=bmXOC%2BF1FxEMF9dyiK2H5%2F1SUtzH0JuVo51h2wPfgyo%3D&mtu=1280&keepalive=5&wnoise=random#%F0%9F%87%A8%F0%9F%87%A6181847")
+        d = w.parse_uri(u)
+        self.assertEqual((d["host"], d["port"], d["address"], d["reserved"]), ("162.159.195.16", 4500, ["172.16.0.2"], [239, 203, 185]))

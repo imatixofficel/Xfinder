@@ -11,6 +11,7 @@ from .donations import load_active, cleanup
 from .naming import original_name, rename
 from . import wg_sources
 import random
+from .config import BRAND
 
 
 def log(*a):
@@ -77,6 +78,45 @@ async def _validate_wg(items, deadline):
     return good
 
 
+WARP_FALLBACK = ["162.159.192.1", "162.159.195.1", "188.114.96.1", "188.114.97.1", "188.114.98.1", "188.114.99.1"]
+
+
+async def _remix_wg(good, clean, deadline):
+    """WireGuard + IP تمیز: حساب‌های سالم را روی endpointهای WARP جدید (ترجیحاً از Scanner-matix) امتحان می‌کند.
+    فقط IPهای داخل رنج WARP کلودفلر معنی دارند (UDP)؛ هر ترکیب با Xray واقعی تست می‌شود و ناموفق‌ها حذف می‌شوند."""
+    ping_of = {c["ip"]: c.get("ping") for c in clean}
+    ips = [c["ip"] for c in clean if wg_sources.is_warp_ip(c["ip"])][:8]
+    scanner = bool(ips)
+    if not ips:
+        ips = WARP_FALLBACK
+    bases, seen = [], set()
+    for x in good:
+        try:
+            d = wg_sources.parse_uri(x["config"])
+        except Exception:
+            continue
+        if d["private_key"] not in seen:
+            seen.add(d["private_key"]); bases.append(d)
+        if len(bases) >= 4:
+            break
+    cands = []
+    for d in bases:
+        for ip in ips:
+            nd = wg_sources.with_endpoint(d, ip, 2408)
+            cands.append({"config": wg_sources.to_uri(nd, "WG"), "server": ip, "port": 2408, "is_remixed": True,
+                          "source": "Scanner-matix + WireGuard" if scanner else "WARP endpoint swap", "trust_score": 85,
+                          "tcp_ping_ms": ping_of.get(ip)})
+    if not cands:
+        return []
+    tested = await validate_xray(cands, xray_binary(), deadline=deadline)
+    ok = [x for x in tested if x.get("xray_alive")]
+    for x in ok:
+        x.update({"alive": True, "protocol": "wireguard", "conf": wg_sources.conf_from_uri(x["config"])})
+    ok.sort(key=lambda x: x.get("http_ping_ms") or 9999)
+    log(f"wireguard remix ({'Scanner-matix' if scanner else 'builtin WARP endpoints'}): {len(cands)} -> {len(ok)} passed")
+    return ok[:12]
+
+
 async def run():
     t0 = time.monotonic()
     b = PIPELINE_BUDGET
@@ -122,6 +162,14 @@ async def run():
     # Automatic WARP generation is intentionally not published: a generated
     # WireGuard private key is a credential. The browser-side generator remains
     # available in the site for personal configs.
+    try:
+        if wg_good and time.monotonic() < t0 + 0.93 * b:
+            wg_new = await _remix_wg(wg_good, clean, t0 + 0.95 * b)
+            have = {x["config"] for x in wg_good}
+            wg_good = [x for x in wg_new if x["config"] not in have] + wg_good
+    except Exception as e:
+        log("wireguard remix skipped:", e)
+
     # 3) کانفیگ‌های اهدایی: جدا و با همان تست واقعی Xray؛ فقط سالم‌ها نمایش داده می‌شوند.
     donations = []
     try:
@@ -137,10 +185,13 @@ async def run():
                     x = good.get(c)
                     if x:
                         ping = x.get("http_ping_ms") or x.get("tcp_ping_ms")
-                        rows.append({"config": c, "name": original_name(c)[:60] or f"Donation-{d['id']}",
-                                     "protocol": x.get("protocol"), "ping": ping})
+                        donor = (d.get("name") or "").strip()
+                        label = f"{BRAND} | {donor}" if donor else BRAND
+                        pn = {"ss": "SS", "hysteria2": "HY2"}.get(x.get("protocol"), (x.get("protocol") or "").upper())
+                        nm = f"{label} • {pn}" + (f" • {int(round(ping))}ms" if ping else "")
+                        rows.append({"config": rename(c, nm), "name": nm, "protocol": x.get("protocol"), "ping": ping})
                 if rows:
-                    donations.append({"id": d["id"], "user": d.get("user", ""), "ad": d.get("ad", ""),
+                    donations.append({"id": d["id"], "name": d.get("name", ""), "ad": d.get("ad", ""),
                                       "created_at": d["created_at"], "expires_at": d["expires_at"], "configs": rows})
         log(f"donations: {len(active)} active, {len(donations)} verified")
     except Exception as e:

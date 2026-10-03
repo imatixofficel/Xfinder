@@ -143,7 +143,7 @@ tbody tr{cursor:pointer;transition:background .12s}tbody tr:hover,tbody tr.sel{b
  .scrim{display:block;position:fixed;inset:0;background:#000a;z-index:55;opacity:0;visibility:hidden;transition:.25s}body.nav-open .scrim{opacity:1;visibility:visible}
  .main{padding:14px 14px 40px}.search.t{display:none}
 }
-@media(max-width:600px){.grid3{grid-template-columns:1fr}h1{font-size:22px}.head{align-items:flex-start;flex-direction:column}.crumb{display:none}.top{justify-content:space-between}}
+@media(max-width:600px){.grid3{grid-template-columns:1fr}h1{font-size:22px}.head{align-items:flex-start;flex-direction:column}.crumb{display:none}.top{justify-content:flex-start}.top .search{margin-inline-start:auto;min-width:0;flex:1}}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;animation-delay:0s!important;transition-duration:.01ms!important}.wm span{opacity:1;transform:none;filter:none}}
 
 /* --- v2.5: links, donate, about, top20, install --- */
@@ -167,3 +167,4 @@ a.nav{text-decoration:none}.nav.lnk span{flex:1}
 .toplist{display:grid;gap:6px;margin-top:12px;max-height:46vh;overflow:auto;text-align:start}
 .toplist .row{padding:7px 10px}.toplist .row b{font-size:12px}.toplist .rk{width:24px;height:24px;border-radius:50%;background:#262626;display:grid;place-items:center;font:700 10px var(--lat);flex:none}
 .nm{max-width:210px;overflow:hidden;text-overflow:ellipsis}
+.dname{font:700 15px var(--ui);display:flex;align-items:center;gap:6px;word-break:break-word}.dname a{color:#fff;text-decoration:none;border-bottom:1px dashed #777}

@@ -17,3 +17,10 @@ body:
       description: متن تبلیغاتی اختیاری (حداکثر ۲۰۰ کاراکتر، فقط متن ساده).
     validations:
       required: false
+  - type: input
+    id: name
+    attributes:
+      label: Name
+      description: نام یا آیدی تلگرام (اختیاری، حداکثر ۴۰ کاراکتر؛ ایموجی مجاز است).
+    validations:
+      required: false

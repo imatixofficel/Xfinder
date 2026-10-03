@@ -24,6 +24,8 @@ export default {
     if (!found.length) return json(400, { ok: false, error: "no_config" }, cors);
     const ad = String(body.ad || "").replace(/[\u0000-\u001f<>]/g, " ").replace(/\s+/g, " ").trim().slice(0, 200);
 
+    const name = String(body.name || "").replace(/[\u0000-\u001f<>#]/g, " ").replace(/\s+/g, " ").trim().slice(0, 40);
+
     const ip = req.headers.get("CF-Connecting-IP") || "0";
     const user = await sha(ip + (env.SALT || "xfinder"));
     if (env.RL) {                                   // اختیاری: KV برای سقف ۳ اهدا در ساعت برای هر IP
@@ -35,7 +37,7 @@ export default {
     const r = await fetch(`https://api.github.com/repos/${env.GH_REPO || "imatixofficel/Xfinder"}/dispatches`, {
       method: "POST",
       headers: { Authorization: `Bearer ${env.GITHUB_TOKEN}`, Accept: "application/vnd.github+json", "User-Agent": "xfinder-donate-worker", "X-GitHub-Api-Version": "2022-11-28", "Content-Type": "application/json" },
-      body: JSON.stringify({ event_type: "donation", client_payload: { configs: found, ad, user } }),
+      body: JSON.stringify({ event_type: "donation", client_payload: { configs: found, ad, name, user } }),
     });
     if (r.status !== 204) return json(502, { ok: false, error: "github_" + r.status }, cors);
     return json(200, { ok: true }, cors);

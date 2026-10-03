@@ -106,7 +106,10 @@ def _load_extra_sources():
 
 
 # منبع WireGuard (تأییدشده: خروجی خام، فرمت wireguard://کلید@IP:پورت). چند URL با ویرگول از env هم می‌شود.
-DEFAULT_WG_SOURCES = "https://raw.githubusercontent.com/wiki/gfpcom/free-proxy-list/lists/wireguard.txt"
+DEFAULT_WG_SOURCES = ",".join([
+    "https://raw.githubusercontent.com/wiki/gfpcom/free-proxy-list/lists/wireguard.txt",   # gfpcom/free-proxy-list (فرمت: کلید@IP:پورت)
+    "https://raw.githubusercontent.com/Argh94/Proxy-List/main/WireGuard.txt",              # Argh94/Proxy-List (URI کامل با reserved)
+])
 
 
 def _wg_env_sources():

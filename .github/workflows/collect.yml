@@ -78,7 +78,7 @@ jobs:
           XRAY_BATCH_SIZE: "32"
           XRAY_PROBE_TIMEOUT: "5"
           # منابع WireGuard (چند URL با ویرگول). منبع زنده بود (فرمت wireguard://کلید@IP:پورت)؛ هر خط با Xray واقعی تست می‌شود.
-          WG_SOURCE_URLS: "https://raw.githubusercontent.com/wiki/gfpcom/free-proxy-list/lists/wireguard.txt"
+          WG_SOURCE_URLS: "https://raw.githubusercontent.com/wiki/gfpcom/free-proxy-list/lists/wireguard.txt,https://raw.githubusercontent.com/Argh94/Proxy-List/main/WireGuard.txt"
           MAX_WG_CANDIDATES: "96"
           PIPELINE_BUDGET: ${{ github.event.inputs.budget || '520' }}
         run: python -m src.main

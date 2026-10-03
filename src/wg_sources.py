@@ -22,6 +22,21 @@ def _is_warp_endpoint(host):
     return any(ip in n for n in _WARP_NETS if n.version == ip.version)
 
 
+def is_warp_ip(host):
+    """آیا IP داخل رنج endpointهای WARP کلودفلر (UDP) است؟ فقط این IPها برای WireGuard/WARP کار می‌کنند."""
+    try:
+        ip = ipaddress.ip_address(host)
+    except ValueError:
+        return False
+    return any(ip in n for n in _WARP_NETS if n.version == ip.version)
+
+
+def with_endpoint(d, host, port):
+    nd = dict(d)
+    nd["host"], nd["port"] = host, int(port)
+    return nd
+
+
 def _key_ok(k):
     try:
         k = (k or "").strip().replace("-", "+").replace("_", "/")
@@ -100,7 +115,9 @@ def to_uri(d, name="Xfinder-WG"):
 
 def conf_text(d):
     host = f"[{d['host']}]" if ":" in d["host"] else d["host"]
-    s = (f"[Interface]\nPrivateKey = {d['private_key']}\nAddress = "
+    s = ("# Xfinder - https://imatixofficel.github.io/Xfinder/\n"
+         + (f"# Reserved = {','.join(map(str, d['reserved']))}   (برای کلاینت‌هایی که Reserved پشتیبانی می‌کنند)\n" if d.get("reserved") else "")
+         + f"[Interface]\nPrivateKey = {d['private_key']}\nAddress = "
          + ", ".join(a + ("/128" if ":" in a else "/32") for a in d["address"]) + f"\nDNS = 1.1.1.1, 1.0.0.1\nMTU = {d['mtu']}\n\n"
          f"[Peer]\nPublicKey = {d['public_key']}\n")
     if d.get("psk"):
