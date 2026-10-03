@@ -1,6 +1,7 @@
 <div align="center">
 
 <img src="assets/img/logo.png" width="120" alt="Xfinder">
+**به نام پروردگار**
 
 # Xfinder
 
