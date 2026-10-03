@@ -1,9 +1,9 @@
 <div align="center">
 
 <img src="assets/img/logo.png" width="120" alt="Xfinder">
-**به نام پروردگار**
 
 # Xfinder
+**به نام پروردگار**
 
 **کانفیگ‌های تست‌شده V2Ray / WireGuard با IP تمیز — به‌روزرسانی خودکار هر ۱۰ دقیقه**
 
