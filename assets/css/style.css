@@ -168,3 +168,44 @@ a.nav{text-decoration:none}.nav.lnk span{flex:1}
 .toplist .row{padding:7px 10px}.toplist .row b{font-size:12px}.toplist .rk{width:24px;height:24px;border-radius:50%;background:#262626;display:grid;place-items:center;font:700 10px var(--lat);flex:none}
 .nm{max-width:210px;overflow:hidden;text-overflow:ellipsis}
 .dname{font:700 15px var(--ui);display:flex;align-items:center;gap:6px;word-break:break-word}.dname a{color:#fff;text-decoration:none;border-bottom:1px dashed #777}
+
+/* --- Light theme (تم روشن) --- */
+:root[data-theme=light]{color-scheme:light;--bg:#ececea;--app:#f7f7f6;--card:#fff;--card2:#f3f3f2;--line:#e4e4e1;--line2:#d4d4d0;--tx:#161616;--mut:#6b6b6b;--dim:#8f8f8f;--w:#000}
+[data-theme=light] :focus-visible{outline-color:#111}
+[data-theme=light] .profile img{background:#e6e6e4}
+[data-theme=light] .pro,[data-theme=light] .nav em,[data-theme=light] .chipg,[data-theme=light] .tab.on,[data-theme=light] .row .ic,[data-theme=light] .pp,[data-theme=light] .toplist .rk{background:#ebebe9;color:#222}
+[data-theme=light] .nav{color:#555}
+[data-theme=light] .nav:hover{color:#000;background:#efefed}
+[data-theme=light] .nav.on{color:#000;background:#fff;border-color:var(--line2)}
+[data-theme=light] .promo{background:radial-gradient(120% 90% at 50% 0,#fff,#f0f0ee)}
+[data-theme=light] .promo .tag,[data-theme=light] .chip,[data-theme=light] .pill,[data-theme=light] .pp.g,[data-theme=light] .toast{background:#161616;color:#fff}
+[data-theme=light] .pill:hover{background:#333}
+[data-theme=light] .pill.alt{background:#ebebe9;color:#111;border-color:var(--line2)}
+[data-theme=light] .pill.alt:hover{background:#e0e0de}
+[data-theme=light] .promo p{color:#444}[data-theme=light] .promo b,[data-theme=light] .crumb b{color:#000}
+[data-theme=light] .promo .orb,[data-theme=light] .det .logo{background:#f0f0ee;color:#111}
+[data-theme=light] .burger:hover{background:#eee}
+[data-theme=light] .search input,[data-theme=light] .tab:hover,[data-theme=light] .aboutc a,[data-theme=light] .dname a{color:#111}
+[data-theme=light] .sq{color:#333}
+[data-theme=light] .ghost,[data-theme=light] .det .btns .gb{background:#f3f3f2;color:#222}
+[data-theme=light] .ghost:hover{background:#e8e8e6;color:#000}
+[data-theme=light] .skel,[data-theme=light] .row,[data-theme=light] .dcfg{background:#fafaf9}
+[data-theme=light] .skel i{background:linear-gradient(90deg,#e8e8e6,#f2f2f0,#e8e8e6);background-size:200% 100%}
+[data-theme=light] .bar b{background:linear-gradient(#222,#999)}
+[data-theme=light] .bar b+b{background:linear-gradient(#bbb,#e2e2e0)}
+[data-theme=light] td{border-top-color:#ececea}
+[data-theme=light] tbody tr:hover,[data-theme=light] tbody tr.sel{background:#f3f3f1}
+[data-theme=light] .coin i{background:#ebebe9;color:#111;border-color:#d4d4d0}
+[data-theme=light] .spark path{stroke:#555}
+[data-theme=light] .fl textarea,[data-theme=light] .fl input,[data-theme=light] .dcard .ad{background:#fff;color:#111}
+[data-theme=light] .fl textarea:focus,[data-theme=light] .fl input:focus{border-color:#555}
+[data-theme=light] .dname a{border-bottom-color:#999}
+[data-theme=light] .load{background:#f7f7f6}
+[data-theme=light] .god{color:#333}[data-theme=light] .god b{color:#000}
+[data-theme=light] .track{background:#e2e2e0}[data-theme=light] .track i{background:#111}
+[data-theme=light] .load .orbit{border-color:#dcdcda}
+[data-theme=light] .load .orbit:after{background:#111;box-shadow:0 0 18px #0004}
+[data-theme=light] .wm span{background-image:linear-gradient(100deg,#8a8a8a 0%,#111 35%,#555 50%,#111 65%,#8a8a8a 100%)}
+[data-theme=light] .modal{background:#0007}
+[data-theme=light] .mb{box-shadow:0 20px 60px #0003}
+@media(max-width:900px){[data-theme=light] .side{background:#f7f7f6}}

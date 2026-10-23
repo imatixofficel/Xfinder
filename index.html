@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0f0f0f">
+<script>try{var m=localStorage.getItem("xf_theme");if(m==="light")document.documentElement.dataset.theme="light"}catch(e){}</script>
 <meta name="description" content="Xfinder — کانفیگ‌های تست‌شده V2Ray و WireGuard با IP تمیز">
 <link rel="icon" href="favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="assets/img/favicon-32.png">
@@ -58,13 +59,14 @@
     <div class="top">
       <button class="burger" id="burger" aria-label="menu"><svg class="i" data-ic="menu"></svg></button>
       <button class="sq" id="lang" aria-label="language"><span class="latin" style="font-weight:700;font-size:12px">FA</span></button>
+      <button class="sq" id="theme" aria-label="theme"><svg class="i" data-ic="sun"></svg></button>
       <div class="crumb">Xfinder / <b id="crumb">Dashboard</b></div>
       <label class="search t"><svg class="i" data-ic="search"></svg><input id="gs" data-ip="search" placeholder="جستجو" aria-label="search"></label>
       <button class="pill" id="refresh"><svg class="i" data-ic="refresh"></svg><span data-i="refresh">بروزرسانی</span></button>
     </div>
 
     <section class="sec on" id="dashboard">
-      <div class="head"><div><h1 data-i="welcome">به Xfinder خوش آمدید!</h1><p class="sub"><span data-i="updated">آخرین بروزرسانی</span>: <span id="upd">—</span> · <span id="cleanInfo"></span></p></div></div>
+      <div class="head"><div><h1 data-i="welcome">به Xfinder خوش آمدید!</h1><p class="sub"><span data-i="updated">آخرین بروزرسانی</span>: <span id="upd">—</span> <span id="cleanInfo" hidden></span></p></div></div>
       <div class="grid3">
         <div class="card qs">
           <div class="skel"><i></i><i></i><i></i></div>
@@ -75,9 +77,9 @@
         </div>
         <div class="card">
           <div class="chart-h"><h3 class="latin">Latency / Top 7</h3><span class="chipg latin" id="liveChip">LIVE</span></div>
-          <div class="legend"><span><i style="background:#fff"></i>TCP</span><span><i style="background:#666"></i>Clean IP</span></div>
+          <div class="legend"><span><i style="background:#fff"></i>TCP</span></div>
           <div class="bars" id="bars"></div><div class="xl" id="xl"></div>
-          <div class="big"><strong id="alivePct">0<small>%</small></strong><span><span class="chip" id="remixChip">+0</span> <span class="sub" data-i="remixed_l">ترکیب با IP تمیز</span></span></div>
+          <div class="big"><strong id="alivePct">0<small>%</small></strong><span hidden><span class="chip" id="remixChip">+0</span></span></div>
         </div>
         <div class="card">
           <h3 data-i="proto_t">پروتکل‌ها</h3>

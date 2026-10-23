@@ -11,7 +11,7 @@ from .donations import load_active, cleanup
 from .naming import original_name, rename
 from . import wg_sources
 import random
-from .config import BRAND
+from .config import BRAND, REMIX_ENABLED
 
 
 def log(*a):
@@ -147,7 +147,7 @@ async def run():
 
     # 2) Clean-IP scanner results -> remix -> real Xray probe again.
     remixed, clean = [], []
-    if validated and time.monotonic() < t0 + 0.80 * b:
+    if REMIX_ENABLED and validated and time.monotonic() < t0 + 0.80 * b:
         clean = await fetch_clean_async()
         log(f"clean IPs usable: {len(clean)}" if clean else "clean IPs: Scanner-matix returned nothing usable; remix skipped")
         _, candidates = build_with(validated, clean)
@@ -163,7 +163,7 @@ async def run():
     # WireGuard private key is a credential. The browser-side generator remains
     # available in the site for personal configs.
     try:
-        if wg_good and time.monotonic() < t0 + 0.93 * b:
+        if REMIX_ENABLED and wg_good and time.monotonic() < t0 + 0.93 * b:
             wg_new = await _remix_wg(wg_good, clean, t0 + 0.95 * b)
             have = {x["config"] for x in wg_good}
             wg_good = [x for x in wg_new if x["config"] not in have] + wg_good

@@ -1,7 +1,7 @@
 import base64, json
 from datetime import datetime, timezone
 from .config import DATA_DIR, OUTPUT_DIR, MAX_PUBLISH_BASE, TOP_N, BRAND
-from .naming import original_name, rename, make_label
+from .naming import original_name, rename, tagged_name
 
 
 def _ping(x):
@@ -17,8 +17,9 @@ def publish(items, remixed, wireguard=(), source_stats=(), raw_total=0, donation
         x.setdefault("http_ping_ms", None); x.setdefault("is_remixed", False)
         x.setdefault("country", "UN"); x.setdefault("country_flag", "🌐")
         if x["protocol"] != "wireguard" or x["config"].lower().startswith("wireguard://"):   # URI قابل نام‌گذاری
-            x["orig_name"] = original_name(x["config"])[:60]
-            x["name"] = make_label(x["protocol"], _ping(x) if _ping(x) != 9999 else None, i, x["is_remixed"], BRAND)
+            orig = original_name(x["config"])
+            x["orig_name"] = orig[:60]
+            x["name"] = tagged_name(orig, x["protocol"], BRAND, seed=f"{x.get('server')}:{x.get('port')}:{x['config'].split('#', 1)[0]}")
             x["config"] = rename(x["config"], x["name"])
         else:
             x["name"] = x.get("name") or "WireGuard"
@@ -44,6 +45,12 @@ def publish(items, remixed, wireguard=(), source_stats=(), raw_total=0, donation
     top_text = "\n".join(x["config"] for x in top) + ("\n" if top else "")
     (OUTPUT_DIR / "top20.txt").write_text(top_text, encoding="utf-8")
     (OUTPUT_DIR / "top20-b64.txt").write_text(base64.b64encode(top_text.encode()).decode(), encoding="utf-8")
+
+    # نام/آدرس منابع در خروجی عمومی نمایش داده نمی‌شود (Source 1، Source 2، ...).
+    alias = {s["name"]: f"Source {n}" for n, s in enumerate(source_stats, 1)}
+    for x in all_items:
+        x["source"] = alias.get(x.get("source"), "Source") if x.get("source") else x.get("source")
+    source_stats = [dict(s, name=alias[s["name"]]) for s in source_stats]
 
     pings = [x["tcp_ping_ms"] for x in all_items if x.get("tcp_ping_ms")]
     avg = round(sum(pings) / len(pings)) if pings else 0

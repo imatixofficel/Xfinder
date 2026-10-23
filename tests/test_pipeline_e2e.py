@@ -90,7 +90,7 @@ class E2E(unittest.TestCase):
             self.assertNotEqual(r.returncode, 0)
             self.assertFalse((td / "root/data/configs.json").exists())
 
-    def test_remix_stage(self):
+    def test_remix_disabled(self):
         with tempfile.TemporaryDirectory() as td:
             td = Path(td)
             ls = [free_listener() for _ in range(2)]
@@ -101,8 +101,9 @@ class E2E(unittest.TestCase):
             for x in ls: x.close()
             self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
             data = json.loads((td / "root/data/configs.json").read_text())
-            self.assertEqual(data["stats"]["remixed"], 1)
-            self.assertTrue(any(c["is_remixed"] and f":{p1}" in c["config"] for c in data["configs"]))
+            self.assertEqual(data["stats"]["remixed"], 0)
+            self.assertFalse(any(c["is_remixed"] for c in data["configs"]))
+            self.assertTrue(any(f":{p0}" in c["config"] for c in data["configs"]))
 
     def test_fails_loudly_without_xray(self):
         env = dict(os.environ, XFINDER_ROOT=tempfile.mkdtemp(), XRAY_BIN="/nonexistent/xray")

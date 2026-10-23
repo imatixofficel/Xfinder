@@ -40,3 +40,34 @@ def make_label(proto, ping, index, remixed=False, brand="Xfinder"):
     tag = f"{brand} ✦ {p}" if remixed else f"{brand} • {p}"
     ms = f" • {int(round(ping))}ms" if ping else ""
     return f"{tag}{ms} • {index:03d}"
+
+
+import hashlib, re
+
+# چند استیکر مختلف؛ برای هر کانفیگ ثابت (بر اساس هش) انتخاب می‌شود تا نام بین اجراها عوض نشود.
+BRAND_EMOJIS = [
+    # اینترنت و شبکه
+    "🌐", "🌍", "🌎", "🌏", "📡", "📶", "🛰️", "🔗", "☁️", "🌩️", "📲", "💻", "🖥️", "🔌", "🧭",
+    # امنیت و VPN
+    "🔒", "🔐", "🔓", "🔑", "🗝️", "🛡️", "🔰", "🧱", "🥷", "🕵️", "👻", "🎭", "🚦",
+    # سرعت
+    "⚡", "🚀", "🛸", "🏎️", "💨", "🧬", "⚙️",
+]
+
+
+def pick_emoji(seed):
+    h = int(hashlib.sha1(str(seed).encode("utf-8", "ignore")).hexdigest(), 16)
+    return BRAND_EMOJIS[h % len(BRAND_EMOJIS)]
+
+
+def tagged_name(orig, proto, brand="Xfinder", seed=""):
+    """نام اصلی کانفیگ + خط جداکننده + برند و استیکر: «OriginalName | Xfinder ⚡».
+    اگر کانفیگ نام نداشت، با پروتکل نام‌گذاری می‌شود."""
+    tag = f"{brand} {pick_emoji(seed or orig)}"
+    orig = (orig or "").strip()
+    if re.search(r"\|\s*" + re.escape(brand) + r"\b", orig) or orig.startswith(brand + " "):
+        return orig                        # تگ دوباره اضافه نشود
+    if not orig:
+        p = {"ss": "SS", "hysteria2": "HY2", "wireguard": "WG"}.get(proto, (proto or "").upper())
+        return f"{tag} | {p}" if p else tag
+    return f"{orig} | {tag}"

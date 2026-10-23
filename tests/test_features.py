@@ -121,6 +121,16 @@ class DonorName(unittest.TestCase):
         self.assertTrue(ok); self.assertEqual(donations.load_active()[0]["name"], "@xf_chan 🔥")
 
 
+class TaggedName(unittest.TestCase):
+    def test_keeps_original_and_adds_brand(self):
+        n = naming.tagged_name("🇩🇪 Germany 01", "vless", seed="s1")
+        self.assertTrue(n.startswith("🇩🇪 Germany 01 | Xfinder "))
+        self.assertEqual(n, naming.tagged_name("🇩🇪 Germany 01", "vless", seed="s1"))   # ثابت
+        self.assertEqual(naming.tagged_name(n, "vless"), n)                                # دوباره اضافه نمی‌شود
+        self.assertGreater(len({naming.pick_emoji(i) for i in range(50)}), 3)             # چند مدل استیکر
+        self.assertTrue(naming.tagged_name("", "ss").startswith("Xfinder ") and naming.tagged_name("", "ss").endswith("| SS"))
+
+
 class WgRemixHelpers(unittest.TestCase):
     def test_warp_ip_and_conf(self):
         from src import wg_sources as w

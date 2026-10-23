@@ -2,7 +2,6 @@
 import asyncio, base64, json, random, re
 from urllib.request import Request, urlopen
 from .config import SOURCES, BLACKLIST, MAX_PER_SOURCE
-from .discover import discover
 from .wg_sources import confs_to_uris
 
 URI_PATTERN = re.compile(r"(?i)(?:vless|vmess|trojan|ss|hysteria2|wireguard)://[^\s\"'<>\\]+")
@@ -106,11 +105,7 @@ async def collect():
             SOURCE_STATS.append({"name": src["name"], "trust": src["trust"], "count": 0, "ok": False})
             return []
 
-    try:
-        extra = await loop.run_in_executor(None, discover, [x["name"] for x in SOURCES])
-    except Exception:
-        extra = []
-    batches = await asyncio.gather(*(one(s) for s in list(SOURCES) + extra))
+    batches = await asyncio.gather(*(one(s) for s in SOURCES))
     seen = set()
     for batch in batches:
         for it in batch:

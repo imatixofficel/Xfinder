@@ -1,5 +1,5 @@
 // Xfinder service worker: پوسته‌ی برنامه کش می‌شود؛ داده‌ها (configs/output) همیشه از شبکه، با fallback به کش.
-const V = "xfinder-v25";
+const V = "xfinder-v26";
 const SHELL = ["./", "index.html", "assets/css/style.css", "assets/js/app.js", "assets/img/icon-192.png", "assets/img/logo.png", "favicon.ico"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(V).then(c => c.addAll(SHELL).catch(() => {})).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(k => Promise.all(k.filter(x => x !== V).map(x => caches.delete(x)))).then(() => self.clients.claim())); });
