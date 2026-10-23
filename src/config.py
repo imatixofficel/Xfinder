@@ -23,9 +23,9 @@ def _env_int(name, default):
 
 # --- Time / size budgets (the pipeline must ALWAYS finish and publish) ---
 PIPELINE_BUDGET = _env_float("PIPELINE_BUDGET", 520)   # seconds for the whole run
-MAX_PER_SOURCE = _env_int("MAX_PER_SOURCE", 2000)      # random sample per source
-MAX_TCP_CANDIDATES = _env_int("MAX_TCP_CANDIDATES", 20000)
-MAX_XRAY_CANDIDATES = _env_int("MAX_XRAY_CANDIDATES", 1600)
+MAX_PER_SOURCE = _env_int("MAX_PER_SOURCE", 200000)    # عملاً بدون سقف: همه‌ی کانفیگ‌های هر منبع
+MAX_TCP_CANDIDATES = _env_int("MAX_TCP_CANDIDATES", 200000)
+MAX_XRAY_CANDIDATES = _env_int("MAX_XRAY_CANDIDATES", 50000)
 MAX_PER_ENDPOINT = 3                                   # same host:port variants
 
 CONCURRENCY = 800
@@ -42,7 +42,8 @@ CLEAN_IPS_URL = "https://raw.githubusercontent.com/imatixofficel/Scanner-matix/m
 BLACKLIST = {"v2ray_configs_pool","nim_vpn_ir","outline_vpn","hope_net","proxystore11","yaney_01","fnet00","ShadowProxy66","zibanabz"}
 
 # --- سرعت و حجم خروجی ---
-MAX_PUBLISH_BASE = 1000      # فقط سریع‌ترین کانفیگ‌های اصلی منتشر می‌شوند تا سایت سنگین نشود
+MAX_HTTP_PING_MS = 2500     # کانفیگ‌های کندتر از این (تست واقعی HTTPS) حذف می‌شوند
+MAX_PUBLISH_BASE = 2000      # فقط سریع‌ترین کانفیگ‌های اصلی منتشر می‌شوند تا سایت سنگین نشود
 REMIX_BASE_LIMIT = 400       # فقط بهترین کانفیگ‌ها با IP تمیز ترکیب می‌شوند
 # --- WireGuard (Cloudflare WARP) ---
 WG_ACCOUNTS = 3              # تعداد حساب WARP که نگه‌داری می‌شود
@@ -90,3 +91,6 @@ def _load_extra_sources():
 
 
 SOURCES += _load_extra_sources()
+
+# --- تست دانلود واقعی (فقط برای کانفیگ‌هایی که تست HTTP را پاس کرده‌اند) ---
+SPEED_TEST_LIMIT = _env_int("SPEED_TEST_LIMIT", 300)   # فقط این تعداد از سریع‌ترین‌ها (کمترین پینگ HTTP)

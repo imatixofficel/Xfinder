@@ -209,3 +209,9 @@ a.nav{text-decoration:none}.nav.lnk span{flex:1}
 [data-theme=light] .modal{background:#0007}
 [data-theme=light] .mb{box-shadow:0 20px 60px #0003}
 @media(max-width:900px){[data-theme=light] .side{background:#f7f7f6}}
+
+/* --- v3: country filter --- */
+.cf{height:32px;max-width:190px;border:1px solid var(--line2);background:var(--card);color:var(--tx);border-radius:11px;padding:0 10px;font:600 12px var(--ui);cursor:pointer}
+.cf option{background:var(--card);color:var(--tx)}
+.tools .cf{margin-inline-start:auto}.tools .cf+.search{margin-inline-start:0}
+[data-theme=light] .cf{background:#fff;color:#111}

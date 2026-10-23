@@ -5,6 +5,7 @@ import asyncio, base64, json, os, socket, stat, subprocess, sys, tempfile, textw
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
+os.environ.setdefault("GEO_DISABLE", "1")   # تست‌ها دیتابیس GeoIP دانلود نکنند
 
 
 def free_listener():

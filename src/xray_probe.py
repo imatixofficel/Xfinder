@@ -23,6 +23,12 @@ PARALLEL = max(1, int(os.getenv("XRAY_PARALLEL", "4")))
 PORT_BASE = int(os.getenv("XRAY_PORT_BASE", "20000"))
 SUPPORTED_NETWORKS = {"tcp", "ws", "grpc", "http"}
 OK_CODES = {"200", "204"}
+# تست دانلود واقعی: ۵۱۲KB از Cloudflare (پایدار)، از طریق همان پروکسی کانفیگ.
+SPEED_URL = os.getenv("XRAY_SPEED_URL", "https://speed.cloudflare.com/__down?bytes=524288")
+SPEED_TIMEOUT = float(os.getenv("XRAY_SPEED_TIMEOUT", "10"))
+SPEED_MIN_BYTES = int(os.getenv("XRAY_SPEED_MIN_BYTES", "400000"))
+SPEED_BATCH = max(1, int(os.getenv("XRAY_SPEED_BATCH", "8")))
+SPEED_PARALLEL = max(1, int(os.getenv("XRAY_SPEED_PARALLEL", "2")))
 
 
 def _b64decode(s):
@@ -392,3 +398,95 @@ async def validate_xray(items, binary="xray", deadline=None):
     if done < len(unique):
         print(f"Xray stage stopped at time budget: tested {done}/{len(unique)}", flush=True)
     return tested
+
+
+async def _speed_probe(port):
+    """سرعت دانلود (KB/s) از طریق پروکسی؛ None اگر دانلود کامل نشد."""
+    proc = await asyncio.create_subprocess_exec(
+        "curl", "-sS", "--max-time", str(int(SPEED_TIMEOUT)),
+        "--proxy", f"socks5h://127.0.0.1:{port}", "-o", "/dev/null",
+        "-w", "%{http_code} %{size_download} %{speed_download}", SPEED_URL,
+        stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.DEVNULL)
+    try:
+        out, _ = await asyncio.wait_for(proc.communicate(), timeout=SPEED_TIMEOUT + 2)
+    except asyncio.TimeoutError:
+        try:
+            proc.kill()
+        except ProcessLookupError:
+            pass
+        await proc.communicate()
+        return None
+    try:
+        code, size, bps = out.decode(errors="ignore").split()[:3]
+        if code == "200" and float(size) >= SPEED_MIN_BYTES and float(bps) > 0:
+            return round(float(bps) / 1024, 1)
+    except Exception:
+        pass
+    return None
+
+
+async def _speed_batch(items, binary, slot):
+    """یک Xray برای چند کانفیگ؛ دانلودها پشت‌سرهم (نه هم‌زمان) تا پهنای‌باند بین‌شان تقسیم نشود."""
+    base_port = PORT_BASE + 5000 + slot * SPEED_BATCH
+    entries = []
+    for it in items:
+        try:
+            entries.append((it, outbound_from_uri(it.get("config", ""))))
+        except Exception:
+            pass
+    if not entries:
+        return
+    with tempfile.TemporaryDirectory(prefix="xfinder-speed-") as td:
+        full = Path(td) / "speed.json"
+        full.write_text(json.dumps(_batch_config(entries, base_port)), encoding="utf-8")
+        proc = None
+        try:
+            proc = await asyncio.create_subprocess_exec(
+                binary, "run", "-c", str(full), stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.DEVNULL)
+            ports = [base_port + i for i in range(len(entries))]
+            ready = await _wait_ports(ports, proc)
+            for (item, _), port in zip(entries, ports):
+                if not ready.get(port):
+                    continue
+                kbps = await _speed_probe(port)
+                item["speed_tested"] = True
+                if kbps:
+                    item["download_speed"] = kbps
+        finally:
+            if proc is not None and proc.returncode is None:
+                try:
+                    proc.terminate()
+                    await asyncio.wait_for(proc.wait(), 2)
+                except Exception:
+                    try:
+                        proc.kill()
+                        await proc.wait()
+                    except Exception:
+                        pass
+
+
+async def validate_speed(items, binary="xray", deadline=None):
+    """روی آیتم‌هایی که قبلاً تست HTTP را پاس کرده‌اند، `download_speed` (KB/s) را در همان دیکشنری می‌گذارد.
+    تعداد آیتم‌های اندازه‌گیری‌شده را برمی‌گرداند. `deadline` از نوع time.monotonic() است."""
+    check_binary(binary)
+    batches = [items[i:i + SPEED_BATCH] for i in range(0, len(items), SPEED_BATCH)]
+    queue = asyncio.Queue()
+    for b in batches:
+        queue.put_nowait(b)
+
+    async def worker(slot):
+        while True:
+            try:
+                batch = queue.get_nowait()
+            except asyncio.QueueEmpty:
+                return
+            if deadline is not None and time.monotonic() >= deadline:
+                return
+            remaining = None if deadline is None else max(2.0, deadline - time.monotonic() + 2)
+            try:
+                await asyncio.wait_for(_speed_batch(batch, binary, slot), timeout=remaining)
+            except asyncio.TimeoutError:
+                continue
+
+    await asyncio.gather(*(worker(s) for s in range(SPEED_PARALLEL)))
+    return sum(1 for x in items if x.get("download_speed"))

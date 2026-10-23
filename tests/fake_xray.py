@@ -61,6 +61,9 @@ async def serve(cfg):
                 data = await r.read(2048)
                 if b"204" in data.split(b"\r\n")[0]:
                     w.write(b"HTTP/1.1 204 No Content\r\nContent-Length: 0\r\n\r\n")
+                elif b"speed" in data.split(b"\r\n")[0]:
+                    body = b"x" * 524288
+                    w.write(b"HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n" % len(body) + body)
                 else:
                     body = b"colo=TEST\n"
                     w.write(b"HTTP/1.1 200 OK\r\nContent-Length: %d\r\n\r\n" % len(body) + body)

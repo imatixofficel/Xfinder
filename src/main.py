@@ -4,14 +4,15 @@ from .config import (MAX_WG_CANDIDATES, DATA_DIR, PIPELINE_BUDGET, MAX_TCP_CANDI
 from .health_monitor import init_db
 from .finder import collect, SOURCE_STATS
 from .validator import validate
-from .xray_probe import validate_xray, check_binary
+from .xray_probe import validate_xray, validate_speed, check_binary
 from .remixer import fetch_clean_async, build_with
-from .publisher import publish
+from .publisher import publish, clean_items
+from . import geo
 from .donations import load_active, cleanup
 from .naming import original_name, rename
 from . import wg_sources
 import random
-from .config import BRAND, REMIX_ENABLED
+from .config import BRAND, REMIX_ENABLED, SPEED_TEST_LIMIT, MAX_PUBLISH_BASE
 
 
 def log(*a):
@@ -21,6 +22,20 @@ def log(*a):
 def xray_binary():
     # GitHub Actions sets XRAY_BIN; local runs can put xray in PATH.
     return os.getenv("XRAY_BIN", "xray")
+
+
+def interleave_by_source(items):
+    """سهم هر منبع متناسب با تعداد کانفیگ‌هایش است (نه برابر): در هر برش از لیست، از هر منبع
+    به نسبت اندازه‌اش و با بهترین پینگ TCP اول انتخاب می‌شود."""
+    buckets = {}
+    for x in items:                       # items از قبل بر اساس پینگ TCP مرتب است
+        buckets.setdefault(x.get("source"), []).append(x)
+    keyed = []
+    for q in buckets.values():
+        n = len(q)
+        keyed.extend(((i + 0.5) / n, i, id(x), x) for i, x in enumerate(q))
+    keyed.sort(key=lambda t: t[:3])
+    return [t[3] for t in keyed]
 
 
 def limit_per_endpoint(items, n=MAX_PER_ENDPOINT):
@@ -37,15 +52,17 @@ async def _real_validate(items, label, tcp_deadline, xray_deadline):
     items = items[:MAX_TCP_CANDIDATES]
     tcp_alive = await validate(items, deadline=tcp_deadline)
     tcp_alive.sort(key=lambda x: x.get("tcp_ping_ms") or 9999)
-    tcp_alive = limit_per_endpoint(tcp_alive)[:MAX_XRAY_CANDIDATES]
+    tcp_alive = interleave_by_source(limit_per_endpoint(tcp_alive))[:MAX_XRAY_CANDIDATES]
     if not tcp_alive:
         log(f"{label}: 0 passed TCP")
         return []
     log(f"{label}: {len(items)} candidates -> {len(tcp_alive)} passed TCP, starting real Xray probe")
     tested = await validate_xray(tcp_alive, xray_binary(), deadline=xray_deadline)
     good = [x for x in tested if x.get("xray_alive")]
+    now = int(time.time())
     for x in good:
         x["alive"] = True
+        x["last_tested"] = now
         x["protocol"] = x["config"].split("://", 1)[0].lower()
     good.sort(key=lambda x: x.get("http_ping_ms") or x.get("tcp_ping_ms") or 9999)
     log(f"{label}: {len(tested)} Xray-tested, {len(good)} passed real Xray probe")
@@ -60,7 +77,8 @@ async def _validate_wg(items, deadline):
             d = wg_sources.parse_uri(x["config"])
         except Exception:
             continue
-        x.update({"server": d["host"], "port": d["port"], "tcp_ping_ms": None, "config": wg_sources.to_uri(d, "WG")})
+        # config همان رشته‌ی اصلی منبع می‌ماند (بدون نرمال‌سازی)؛ فقط server/port برای محدودکردن تکراری‌ها.
+        x.update({"server": d["host"], "port": d["port"], "tcp_ping_ms": None})
         cands.append(x)
     random.shuffle(cands)
     cands = limit_per_endpoint(cands)[:MAX_WG_CANDIDATES]
@@ -71,6 +89,7 @@ async def _validate_wg(items, deadline):
     good = [x for x in tested if x.get("xray_alive")]
     for x in good:
         x["alive"] = True
+        x["last_tested"] = int(time.time())
         x["protocol"] = "wireguard"
         x["conf"] = wg_sources.conf_from_uri(x["config"])
     good.sort(key=lambda x: x.get("http_ping_ms") or 9999)
@@ -111,7 +130,7 @@ async def _remix_wg(good, clean, deadline):
     tested = await validate_xray(cands, xray_binary(), deadline=deadline)
     ok = [x for x in tested if x.get("xray_alive")]
     for x in ok:
-        x.update({"alive": True, "protocol": "wireguard", "conf": wg_sources.conf_from_uri(x["config"])})
+        x.update({"alive": True, "last_tested": int(time.time()), "protocol": "wireguard", "conf": wg_sources.conf_from_uri(x["config"])})
     ok.sort(key=lambda x: x.get("http_ping_ms") or 9999)
     log(f"wireguard remix ({'Scanner-matix' if scanner else 'builtin WARP endpoints'}): {len(cands)} -> {len(ok)} passed")
     return ok[:12]
@@ -169,6 +188,22 @@ async def run():
             wg_good = [x for x in wg_new if x["config"] not in have] + wg_good
     except Exception as e:
         log("wireguard remix skipped:", e)
+
+    # 2b) تست دانلود واقعی: فقط برای کانفیگ‌هایی که تست HTTP را پاس کرده‌اند (سریع‌ترین‌ها).
+    try:
+        if time.monotonic() < t0 + 0.88 * b:
+            cands = clean_items(validated)[:SPEED_TEST_LIMIT]
+            n = await validate_speed(cands, xray_binary(), deadline=t0 + 0.93 * b)
+            log(f"speed: {len(cands)} candidates -> {n} measured")
+    except Exception as e:
+        log("speed stage skipped:", e)
+
+    # 2c) GeoIP: کشور (و پرچم) هر کانفیگ منتشرشده.
+    try:
+        loop = asyncio.get_running_loop()
+        await loop.run_in_executor(None, geo.annotate, clean_items(validated)[:MAX_PUBLISH_BASE] + list(wg_good))
+    except Exception as e:
+        log("geo skipped:", e)
 
     # 3) کانفیگ‌های اهدایی: جدا و با همان تست واقعی Xray؛ فقط سالم‌ها نمایش داده می‌شوند.
     donations = []

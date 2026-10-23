@@ -121,6 +121,29 @@ class DonorName(unittest.TestCase):
         self.assertTrue(ok); self.assertEqual(donations.load_active()[0]["name"], "@xf_chan 🔥")
 
 
+class CleanItems(unittest.TestCase):
+    def test_drops_slow_duplicate_and_dead(self):
+        mk = lambda c, p, **k: dict({"config": c, "http_ping_ms": p}, **k)
+        out = publisher.clean_items([mk("vless://a@h:1#x", 900), mk("vless://a@h:1#y", 800),
+                                     mk("vless://b@h:1", 9000), mk("vless://c@h:1", 300, xray_alive=False),
+                                     mk("vless://d@h:1", 100)])
+        self.assertEqual([x["config"].split("#")[0] for x in out], ["vless://d@h:1", "vless://a@h:1"])
+        self.assertEqual(out[1]["http_ping_ms"], 800)   # سریع‌ترین تکراری
+        s = publisher.slim({"config": "c", "xray_error": "boom", "alive": True, "port": 1})
+        self.assertEqual(s, {"config": "c", "port": 1})
+
+
+class Interleave(unittest.TestCase):
+    def test_share_is_proportional_to_source_size(self):
+        from src.main import interleave_by_source
+        items = [{"source": "a", "i": i} for i in range(90)] + [{"source": "b", "i": i} for i in range(10)]
+        out = interleave_by_source(items)
+        self.assertEqual(len(out), 100)
+        first = out[:20]
+        self.assertEqual(sum(x["source"] == "b" for x in first), 2)   # ~10% از ۲۰ تای اول
+        self.assertEqual([x["i"] for x in out if x["source"] == "a"], list(range(90)))   # ترتیب پینگ حفظ می‌شود
+
+
 class TaggedName(unittest.TestCase):
     def test_keeps_original_and_adds_brand(self):
         n = naming.tagged_name("🇩🇪 Germany 01", "vless", seed="s1")
